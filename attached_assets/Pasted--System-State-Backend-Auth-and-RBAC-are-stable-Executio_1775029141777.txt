@@ -1,0 +1,32 @@
+**System State:** Backend Auth and RBAC are stable. 
+
+**Execution Directive: High-Fidelity AI Workspace UI Transformation**
+As Lead UI/UX Architect, I require a complete overhaul of the authenticated dashboard to match a Tier-1 AI Agent Workspace (similar to Replit's Agent view). Execute the following frontend mutation on `public/index.html` and `public/app.js`:
+
+**1. Global Layout & Theme (Tailwind CSS Dark Mode)**
+- Convert the entire application to a strict dark theme. Set the body to `bg-[#0e1117] text-gray-200 h-screen flex overflow-hidden`.
+- Remove the old white-card dashboard layout. 
+
+**2. Sidebar Architecture (Left Navigation)**
+- Create a fixed left `<aside>` with width `w-64`, background `bg-[#1c2333]`, and a right border `border-r border-gray-800`.
+- Include a Workspace Dropdown at the top (e.g., "User's Workspace").
+- Include a "+ Create something new" primary action button.
+- Build a vertical navigation menu: Home, Projects, Published Projects, Integrations, Settings.
+
+**3. Main Command Center (Center Canvas)**
+- The main `<main>` area should be `flex-1 overflow-y-auto flex flex-col items-center pt-20 px-8`.
+- **The Hero Prompt:** Add a centered greeting: `<h1 class="text-2xl font-semibold text-white mb-6">Hi <span id="user-greeting-name">Developer</span>, what do you want to make?</h1>`.
+- **The AI Input Bar:** Build a large, prominent prompt input box. It should look like a code editor or terminal input: `bg-[#1c2333] border border-gray-700 rounded-xl w-full max-w-3xl p-4 shadow-lg focus-within:ring-2 ring-blue-500`. Include an inner text area and a submit/arrow button.
+- **Quick Actions:** Below the prompt, add a row of subtle icon-buttons (e.g., Website, Mobile, Design, Database).
+
+**4. Recent Projects Grid**
+- Below the hero section, create a "Your recent Projects" section.
+- Use CSS Grid (`grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-5xl mt-12`).
+- Design project cards that mimic the screenshot: A dark header area for a thumbnail, a title, timestamp (e.g., "2 hours ago"), and a status indicator (Private/Published).
+
+**5. Client Logic Integration**
+- Ensure the `app.js` authentication logic still controls visibility. When the user logs in, hide the auth forms and reveal this new Workspace layout.
+- Dynamically inject the user's email/name into the Hero Prompt greeting using the decoded JWT payload.
+
+**Action Required:**
+Rewrite `index.html` and `app.js` to implement this design. Output a confirmation when the new AI Workspace UI is ready for review at localhost.
