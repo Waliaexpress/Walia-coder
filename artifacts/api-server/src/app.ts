@@ -31,7 +31,11 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 const publicDir = path.join(process.cwd(), "public");
-app.use(express.static(publicDir));
+
+app.use("/workspace", express.static(publicDir));
+app.get("/workspace/*path", (_req, res) => {
+  res.sendFile(path.join(publicDir, "index.html"));
+});
 
 app.use("/api", router);
 
