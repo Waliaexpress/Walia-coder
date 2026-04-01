@@ -28,6 +28,7 @@ const PROVIDER_MANAGED_ENV_VARS = new Set([
   // Region routing (per-model VERTEX_REGION_CLAUDE_* handled by prefix below)
   'CLOUD_ML_REGION',
   // Auth
+  'WALIA_API_KEY',
   'ANTHROPIC_API_KEY',
   'ANTHROPIC_AUTH_TOKEN',
   'WALIA_CODER_OAUTH_TOKEN',

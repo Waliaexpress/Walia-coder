@@ -14,6 +14,7 @@ import { isEnvTruthy } from './envUtils.js'
  */
 const GHA_SUBPROCESS_SCRUB = [
   // Anthropic auth — claude re-reads these per-request, subprocesses don't need them
+  'WALIA_API_KEY',
   'ANTHROPIC_API_KEY',
   'WALIA_CODER_OAUTH_TOKEN',
   'ANTHROPIC_AUTH_TOKEN',

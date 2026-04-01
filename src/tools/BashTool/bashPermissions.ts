@@ -399,6 +399,7 @@ const SAFE_ENV_VARS = new Set([
   'PYTEST_DEBUG', // debug output
 
   // API keys and authentication
+  'WALIA_API_KEY', // Walia Coder API authentication
   'ANTHROPIC_API_KEY', // API authentication
 
   // Locale and character encoding
