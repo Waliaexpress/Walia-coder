@@ -18,7 +18,7 @@ const formSchema = z.object({
 });
 
 export default function Login() {
-  const [, setLocation] = useLocation();
+  useLocation();
   const { login } = useAuth();
   const { toast } = useToast();
   
@@ -35,7 +35,7 @@ export default function Login() {
       {
         onSuccess: (data) => {
           login(data.token, data.user);
-          setLocation("/dashboard");
+          window.location.href = "/workspace";
         },
         onError: (error) => {
           toast({

@@ -168,7 +168,8 @@ async function loadHomeProjects() {
     const data = await res.json();
     if (!res.ok) { grid.innerHTML = buildNewProjectCard(); return; }
 
-    const cards = data.projects.slice(0, 5).map((p, i) => buildProjectCard(p, i)).join("");
+    const projects = Array.isArray(data) ? data : (data.projects || []);
+    const cards = projects.slice(0, 5).map((p, i) => buildProjectCard(p, i)).join("");
     grid.innerHTML = cards + buildNewProjectCard();
   } catch {
     grid.innerHTML = buildNewProjectCard();
@@ -185,7 +186,7 @@ async function loadProjectsView(viewName) {
     const data = await res.json();
     if (!res.ok) { if (grid) grid.innerHTML = ""; return; }
 
-    let projects = data.projects;
+    let projects = Array.isArray(data) ? data : (data.projects || []);
     if (viewName === "published") {
       projects = projects.filter(p => p.status === "live");
       const emptyEl = document.getElementById("published-empty");
