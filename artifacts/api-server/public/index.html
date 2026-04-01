@@ -9,529 +9,479 @@
     tailwind.config = {
       theme: {
         extend: {
-          fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] },
-          colors: {
-            surface: '#1c2333',
-            canvas: '#0e1117',
-          },
+          fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'], mono: ['Geist Mono', 'JetBrains Mono', 'monospace'] },
+          colors: { surface: '#1c2333', canvas: '#0e1117' },
           animation: {
-            'fade-in': 'fadeIn 0.25s ease-out',
-            'slide-up': 'slideUp 0.3s ease-out',
+            'fade-in': 'fadeIn 0.2s ease-out',
+            'slide-up': 'slideUp 0.28s cubic-bezier(0.16,1,0.3,1)',
             'pulse-dot': 'pulseDot 2s ease-in-out infinite',
           },
           keyframes: {
-            fadeIn: { '0%': { opacity: '0' }, '100%': { opacity: '1' } },
-            slideUp: { '0%': { opacity: '0', transform: 'translateY(12px)' }, '100%': { opacity: '1', transform: 'translateY(0)' } },
-            pulseDot: { '0%,100%': { opacity: '1' }, '50%': { opacity: '0.4' } },
+            fadeIn: { from: { opacity: '0' }, to: { opacity: '1' } },
+            slideUp: { from: { opacity: '0', transform: 'translateY(14px)' }, to: { opacity: '1', transform: 'translateY(0)' } },
+            pulseDot: { '0%,100%': { opacity: '1' }, '50%': { opacity: '0.35' } },
           },
         },
       },
     };
   </script>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
   <style>
-    * { font-family: 'Inter', system-ui, sans-serif; }
-    ::-webkit-scrollbar { width: 6px; }
-    ::-webkit-scrollbar-track { background: #0e1117; }
-    ::-webkit-scrollbar-thumb { background: #2d3748; border-radius: 3px; }
-    .input-field {
+    *, *::before, *::after { box-sizing: border-box; font-family: 'Inter', system-ui, sans-serif; }
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #2d3748; border-radius: 10px; }
+
+    .view { display: none; }
+    .view.active { display: flex; flex-direction: column; animation: fadeIn 0.18s ease-out; }
+
+    .input-dark {
       width: 100%; padding: 10px 14px; border-radius: 8px;
-      border: 1px solid #374151; background: #111827;
-      color: #e5e7eb; font-size: 0.875rem; outline: none;
+      border: 1px solid #2d3748; background: #0e1117;
+      color: #e2e8f0; font-size: 0.875rem; outline: none;
       transition: border-color 0.15s, box-shadow 0.15s;
     }
-    .input-field::placeholder { color: #6b7280; }
-    .input-field:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.15); }
+    .input-dark::placeholder { color: #4b5563; }
+    .input-dark:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.12); }
+
     .nav-item {
-      display: flex; align-items: center; gap: 10px;
-      padding: 8px 12px; border-radius: 8px; font-size: 0.875rem;
-      color: #9ca3af; cursor: pointer; transition: all 0.15s; width: 100%;
-      border: none; background: none; text-align: left;
+      display: flex; align-items: center; gap: 9px;
+      padding: 7px 10px; border-radius: 7px; font-size: 0.8125rem; font-weight: 500;
+      color: #6b7280; cursor: pointer; transition: background 0.12s, color 0.12s;
+      width: 100%; border: none; background: transparent; text-align: left; white-space: nowrap;
     }
-    .nav-item:hover { background: rgba(255,255,255,0.06); color: #e5e7eb; }
-    .nav-item.active { background: rgba(59,130,246,0.15); color: #93c5fd; }
+    .nav-item:hover { background: rgba(255,255,255,0.05); color: #d1d5db; }
+    .nav-item.active { background: rgba(59,130,246,0.12); color: #93c5fd; }
+    .nav-item .icon { flex-shrink: 0; width: 15px; height: 15px; }
+
+    .quick-pill {
+      display: flex; align-items: center; gap: 7px;
+      padding: 7px 14px; background: rgba(255,255,255,0.04); border: 1px solid #2d3748;
+      border-radius: 999px; color: #9ca3af; font-size: 0.8rem; cursor: pointer;
+      transition: all 0.15s; white-space: nowrap; font-weight: 500;
+    }
+    .quick-pill:hover { background: rgba(59,130,246,0.08); border-color: rgba(59,130,246,0.4); color: #93c5fd; }
+    .quick-pill svg { flex-shrink: 0; }
+
     .project-card {
       background: #1c2333; border: 1px solid #2d3748; border-radius: 12px;
-      overflow: hidden; cursor: pointer; transition: border-color 0.15s, transform 0.15s;
+      overflow: hidden; cursor: pointer;
+      transition: border-color 0.18s, box-shadow 0.18s, transform 0.18s;
     }
-    .project-card:hover { border-color: #4b5563; transform: translateY(-2px); }
-    .quick-btn {
-      display: flex; flex-direction: column; align-items: center; gap: 6px;
-      padding: 12px 20px; background: #1c2333; border: 1px solid #2d3748;
-      border-radius: 10px; color: #9ca3af; font-size: 0.8rem; cursor: pointer;
-      transition: all 0.15s; white-space: nowrap;
-    }
-    .quick-btn:hover { background: #263244; border-color: #3b82f6; color: #93c5fd; }
+    .project-card:hover { border-color: #374151; box-shadow: 0 8px 32px rgba(0,0,0,0.3); transform: translateY(-2px); }
+
+    .status-live { background: rgba(16,185,129,0.12); color: #34d399; border: 1px solid rgba(52,211,153,0.2); }
+    .status-private { background: rgba(107,114,128,0.12); color: #9ca3af; border: 1px solid rgba(107,114,128,0.2); }
+    .status-building { background: rgba(245,158,11,0.12); color: #fbbf24; border: 1px solid rgba(251,191,36,0.25); }
+
+    .role-admin { background: rgba(245,158,11,0.12); color: #fbbf24; border: 1px solid rgba(245,158,11,0.2); }
+    .role-manager { background: rgba(59,130,246,0.12); color: #93c5fd; border: 1px solid rgba(59,130,246,0.2); }
+    .role-employee { background: rgba(107,114,128,0.1); color: #9ca3af; border: 1px solid rgba(107,114,128,0.2); }
+
+    .btn-primary { background: #3b82f6; color: #fff; border: none; border-radius: 8px; font-weight: 600; font-size: 0.875rem; cursor: pointer; transition: background 0.15s; }
+    .btn-primary:hover { background: #2563eb; }
+    .btn-primary:active { background: #1d4ed8; }
+    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .alert-error { background: rgba(239,68,68,0.1); color: #fca5a5; border: 1px solid rgba(239,68,68,0.2); border-radius: 8px; padding: 10px 14px; font-size: 0.875rem; }
+    .alert-success { background: rgba(16,185,129,0.1); color: #6ee7b7; border: 1px solid rgba(16,185,129,0.2); border-radius: 8px; padding: 10px 14px; font-size: 0.875rem; }
   </style>
 </head>
-
 <body class="bg-canvas text-gray-200 h-screen flex overflow-hidden">
 
-  <!-- ═══════════════════════════════════════════════
-       AUTH PANEL — full-screen centered overlay
-  ════════════════════════════════════════════════ -->
-  <div id="auth-panel" class="fixed inset-0 z-50 flex items-center justify-center bg-canvas p-4">
-    <div class="w-full max-w-md animate-slide-up">
+<!-- ═══════════════════════════════════════════════════
+     AUTH SCREEN
+════════════════════════════════════════════════════ -->
+<div id="auth-panel" class="fixed inset-0 z-50 flex items-center justify-center bg-canvas p-4">
+  <div class="w-full max-w-[400px] animate-slide-up">
 
-      <!-- Brand -->
-      <div class="text-center mb-8">
-        <div class="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-blue-600 shadow-lg shadow-blue-600/30 mb-4">
-          <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
-          </svg>
-        </div>
-        <h1 class="text-2xl font-bold text-white tracking-tight">Walia Nexus</h1>
-        <p class="text-gray-500 text-sm mt-1">AI-Powered Workspace Platform</p>
+    <div class="text-center mb-8">
+      <div class="inline-flex items-center justify-center w-11 h-11 rounded-xl bg-blue-600 shadow-lg shadow-blue-600/25 mb-4">
+        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+        </svg>
       </div>
-
-      <!-- Auth card -->
-      <div class="bg-surface rounded-2xl border border-gray-800 shadow-2xl shadow-black/60 overflow-hidden">
-
-        <!-- Tabs -->
-        <div class="flex border-b border-gray-800">
-          <button id="tab-login" onclick="switchTab('login')"
-            class="flex-1 py-4 text-sm font-semibold text-blue-400 border-b-2 border-blue-500 transition-all duration-200">
-            Sign In
-          </button>
-          <button id="tab-register" onclick="switchTab('register')"
-            class="flex-1 py-4 text-sm font-semibold text-gray-500 border-b-2 border-transparent hover:text-gray-300 transition-all duration-200">
-            Register
-          </button>
-        </div>
-
-        <div class="p-7">
-          <!-- Alert -->
-          <div id="alert-box" class="hidden mb-5 px-4 py-3 rounded-lg text-sm font-medium"></div>
-
-          <!-- LOGIN -->
-          <form id="login-form" onsubmit="handleLogin(event)" class="space-y-5 animate-fade-in">
-            <div>
-              <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Email</label>
-              <input id="login-email" type="email" required placeholder="you@walia.dev" class="input-field" />
-            </div>
-            <div>
-              <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Password</label>
-              <input id="login-password" type="password" required placeholder="••••••••" class="input-field" />
-            </div>
-            <button type="submit" id="login-btn" class="w-full mt-2 py-2.5 px-4 bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white font-semibold rounded-lg text-sm transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
-              <span id="login-btn-text">Sign In</span>
-              <svg id="login-spinner" class="hidden animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
-              </svg>
-            </button>
-          </form>
-
-          <!-- REGISTER -->
-          <form id="register-form" onsubmit="handleRegister(event)" class="space-y-5 animate-fade-in hidden">
-            <div>
-              <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Email</label>
-              <input id="reg-email" type="email" required placeholder="you@walia.dev" class="input-field" />
-            </div>
-            <div>
-              <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Password</label>
-              <input id="reg-password" type="password" required placeholder="Min. 8 characters" minlength="8" class="input-field" />
-            </div>
-            <div>
-              <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Role</label>
-              <select id="reg-role" class="input-field cursor-pointer">
-                <option value="employee">Employee</option>
-                <option value="manager">Manager</option>
-                <option value="admin">Admin</option>
-              </select>
-            </div>
-            <button type="submit" id="reg-btn" class="w-full mt-2 py-2.5 px-4 bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white font-semibold rounded-lg text-sm transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
-              <span id="reg-btn-text">Create Account</span>
-              <svg id="reg-spinner" class="hidden animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
-              </svg>
-            </button>
-          </form>
-        </div>
-      </div>
-
-      <p class="text-center text-gray-700 text-xs mt-6">Walia Nexus &copy; 2025 &mdash; Internal Use Only</p>
+      <h1 class="text-xl font-bold text-white tracking-tight">Walia Nexus</h1>
+      <p class="text-gray-500 text-sm mt-1">AI-Powered Workspace Platform</p>
     </div>
+
+    <div class="bg-surface rounded-2xl border border-gray-800 shadow-2xl shadow-black/50 overflow-hidden">
+      <div class="flex border-b border-gray-800">
+        <button id="tab-login" onclick="switchTab('login')" class="flex-1 py-3.5 text-sm font-semibold text-blue-400 border-b-2 border-blue-500 transition-all">Sign In</button>
+        <button id="tab-register" onclick="switchTab('register')" class="flex-1 py-3.5 text-sm font-semibold text-gray-500 border-b-2 border-transparent hover:text-gray-300 transition-all">Register</button>
+      </div>
+      <div class="p-6">
+        <div id="alert-box" class="hidden mb-4"></div>
+
+        <form id="login-form" onsubmit="handleLogin(event)" class="space-y-4">
+          <div>
+            <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Email</label>
+            <input id="login-email" type="email" required placeholder="you@walia.dev" class="input-dark" />
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Password</label>
+            <input id="login-password" type="password" required placeholder="••••••••" class="input-dark" />
+          </div>
+          <button type="submit" id="login-btn" class="btn-primary w-full py-2.5 px-4 mt-1 flex items-center justify-center gap-2">
+            <span id="login-btn-text">Sign In</span>
+            <svg id="login-spinner" class="hidden animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+            </svg>
+          </button>
+        </form>
+
+        <form id="register-form" onsubmit="handleRegister(event)" class="space-y-4 hidden">
+          <div>
+            <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Email</label>
+            <input id="reg-email" type="email" required placeholder="you@walia.dev" class="input-dark" />
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Password</label>
+            <input id="reg-password" type="password" required placeholder="Min. 8 characters" minlength="8" class="input-dark" />
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Role</label>
+            <select id="reg-role" class="input-dark cursor-pointer">
+              <option value="employee">Employee</option>
+              <option value="manager">Manager</option>
+              <option value="admin">Admin</option>
+            </select>
+          </div>
+          <button type="submit" id="reg-btn" class="btn-primary w-full py-2.5 px-4 mt-1 flex items-center justify-center gap-2">
+            <span id="reg-btn-text">Create Account</span>
+            <svg id="reg-spinner" class="hidden animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+            </svg>
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <p class="text-center text-gray-700 text-xs mt-5">Walia Nexus &copy; 2025 &mdash; Internal Use Only</p>
   </div>
+</div>
 
-  <!-- ═══════════════════════════════════════════════
-       WORKSPACE — sidebar + main canvas
-  ════════════════════════════════════════════════ -->
-  <div id="workspace-panel" class="hidden w-full h-screen flex">
+<!-- ═══════════════════════════════════════════════════
+     WORKSPACE SPA
+════════════════════════════════════════════════════ -->
+<div id="workspace-panel" class="hidden w-full h-screen flex">
 
-    <!-- ── SIDEBAR ── -->
-    <aside class="w-64 bg-surface border-r border-gray-800 flex flex-col flex-shrink-0">
+  <!-- ─── SIDEBAR ─── -->
+  <aside class="w-60 flex flex-col flex-shrink-0 border-r border-gray-800/80 bg-surface/80 backdrop-blur-md">
 
-      <!-- Workspace dropdown -->
-      <div class="p-4 border-b border-gray-800">
-        <button class="w-full flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-white/5 transition-colors group">
-          <div class="flex items-center gap-2.5">
-            <div class="w-6 h-6 rounded-md bg-blue-600 flex items-center justify-center flex-shrink-0">
-              <svg class="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 10V3L4 14h7v7l9-11h-7z"/>
-              </svg>
-            </div>
-            <span id="sidebar-workspace-name" class="text-sm font-semibold text-gray-200 truncate">My Workspace</span>
-          </div>
-          <svg class="w-4 h-4 text-gray-600 group-hover:text-gray-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l4-4 4 4m0 6l-4 4-4-4"/>
-          </svg>
-        </button>
-      </div>
-
-      <!-- Create button -->
-      <div class="px-4 py-3">
-        <button class="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg border border-dashed border-gray-700 text-gray-400 hover:border-blue-500/60 hover:text-blue-400 hover:bg-blue-500/5 text-sm font-medium transition-all duration-200">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-          </svg>
-          Create something new
-        </button>
-      </div>
-
-      <!-- Navigation -->
-      <nav class="flex-1 px-3 py-2 space-y-0.5 overflow-y-auto">
-        <button class="nav-item active" onclick="switchView('home', this)">
-          <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
-          </svg>
-          Home
-        </button>
-        <button class="nav-item" onclick="switchView('projects', this)">
-          <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
-          </svg>
-          Projects
-        </button>
-        <button class="nav-item" onclick="switchView('published', this)">
-          <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9"/>
-          </svg>
-          Published Projects
-        </button>
-        <button class="nav-item" onclick="switchView('integrations', this)">
-          <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 4a2 2 0 114 0v1a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-1a2 2 0 100 4h1a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-1a2 2 0 10-4 0v1a1 1 0 01-1 1H7a1 1 0 01-1-1v-3a1 1 0 00-1-1H4a2 2 0 110-4h1a1 1 0 001-1V7a1 1 0 011-1h3a1 1 0 001-1V4z"/>
-          </svg>
-          Integrations
-        </button>
-        <button class="nav-item" onclick="switchView('settings', this)">
-          <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-          </svg>
-          Settings
-        </button>
-
-        <!-- Admin-only section -->
-        <div id="admin-nav-section" class="hidden">
-          <div class="pt-3 pb-1 px-1">
-            <p class="text-xs font-semibold uppercase tracking-widest text-gray-600">Admin</p>
-          </div>
-          <button class="nav-item" onclick="switchView('admin', this)">
-            <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+    <!-- Workspace header -->
+    <div class="px-3 pt-4 pb-3 border-b border-gray-800/60">
+      <button class="w-full flex items-center justify-between px-2.5 py-2 rounded-lg hover:bg-white/5 transition-colors group">
+        <div class="flex items-center gap-2.5 min-w-0">
+          <div class="w-6 h-6 rounded-md bg-blue-600 flex items-center justify-center flex-shrink-0">
+            <svg class="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 10V3L4 14h7v7l9-11h-7z"/>
             </svg>
-            Identity Control
-          </button>
-          <button class="nav-item" onclick="switchView('profile-api', this)">
-            <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/>
-            </svg>
-            API Explorer
-          </button>
+          </div>
+          <span id="sidebar-workspace-name" class="text-sm font-semibold text-gray-200 truncate">Workspace</span>
         </div>
-      </nav>
+        <svg class="w-3.5 h-3.5 text-gray-600 group-hover:text-gray-400 transition-colors flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l4-4 4 4m0 6l-4 4-4-4"/>
+        </svg>
+      </button>
+    </div>
 
-      <!-- User footer -->
-      <div class="p-3 border-t border-gray-800">
-        <div class="flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-white/5 transition-colors group">
-          <div id="sidebar-avatar" class="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-xs font-bold text-white flex-shrink-0">?</div>
-          <div class="flex-1 min-w-0">
-            <p id="sidebar-email" class="text-xs font-medium text-gray-300 truncate">Loading…</p>
-            <p id="sidebar-role" class="text-xs text-gray-600 capitalize">—</p>
-          </div>
-          <button onclick="handleLogout()" title="Sign out" class="p-1 rounded text-gray-600 hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
-            </svg>
-          </button>
-        </div>
+    <!-- Create button -->
+    <div class="px-3 py-2.5">
+      <button onclick="switchView('home')" class="w-full flex items-center gap-2 py-2 px-3 rounded-lg bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white text-sm font-semibold transition-colors">
+        <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/>
+        </svg>
+        Create something new
+      </button>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="flex-1 px-2 py-1 overflow-y-auto space-y-0.5">
+      <p class="px-2 pt-2 pb-1 text-xs font-semibold uppercase tracking-widest text-gray-600">Main</p>
+      <button data-view="home" class="nav-item active" onclick="switchView('home')">
+        <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+        Home
+      </button>
+      <button data-view="projects" class="nav-item" onclick="switchView('projects')">
+        <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
+        Projects
+      </button>
+      <button data-view="published" class="nav-item" onclick="switchView('published')">
+        <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9"/></svg>
+        Published Projects
+      </button>
+
+      <p class="px-2 pt-3 pb-1 text-xs font-semibold uppercase tracking-widest text-gray-600">Tools</p>
+      <button data-view="integrations" class="nav-item" onclick="switchView('integrations')">
+        <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 4a2 2 0 114 0v1a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-1a2 2 0 100 4h1a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-1a2 2 0 10-4 0v1a1 1 0 01-1 1H7a1 1 0 01-1-1v-3a1 1 0 00-1-1H4a2 2 0 110-4h1a1 1 0 001-1V7a1 1 0 011-1h3a1 1 0 001-1V4z"/></svg>
+        Integrations
+      </button>
+      <button data-view="settings" class="nav-item" onclick="switchView('settings')">
+        <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+        Settings
+      </button>
+
+      <div id="admin-nav-section" class="hidden">
+        <p class="px-2 pt-3 pb-1 text-xs font-semibold uppercase tracking-widest text-gray-600">Admin</p>
+        <button data-view="admin" class="nav-item" onclick="switchView('admin')">
+          <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+          Identity Control
+        </button>
+        <button data-view="api-explorer" class="nav-item" onclick="switchView('api-explorer')">
+          <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/></svg>
+          API Explorer
+        </button>
       </div>
-    </aside>
+    </nav>
 
-    <!-- ── MAIN CANVAS ── -->
-    <main class="flex-1 overflow-y-auto bg-canvas">
+    <!-- User footer -->
+    <div class="px-2 py-2.5 border-t border-gray-800/60">
+      <div class="flex items-center gap-2.5 px-2 py-2 rounded-lg hover:bg-white/5 transition-colors group">
+        <div id="sidebar-avatar" class="w-7 h-7 rounded-full bg-blue-600 flex items-center justify-center text-xs font-bold text-white flex-shrink-0">?</div>
+        <div class="flex-1 min-w-0">
+          <p id="sidebar-email" class="text-xs font-medium text-gray-300 truncate">—</p>
+          <p id="sidebar-role" class="text-xs text-gray-600 capitalize">—</p>
+        </div>
+        <button onclick="handleLogout()" title="Sign out" class="p-1 rounded text-gray-700 hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100 flex-shrink-0">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+        </button>
+      </div>
+    </div>
+  </aside>
 
-      <!-- ── VIEW: HOME ── -->
-      <div id="view-home" class="flex flex-col items-center pt-16 px-8 pb-16 min-h-full animate-fade-in">
+  <!-- ─── MAIN CONTENT ─── -->
+  <main class="flex-1 overflow-y-auto bg-canvas">
 
-        <!-- Greeting -->
-        <h1 class="text-2xl font-semibold text-white mb-2">
+    <!-- ══ VIEW: HOME ══ -->
+    <div id="view-home" class="view active min-h-full items-center pt-14 px-8 pb-16">
+      <div class="w-full max-w-3xl mx-auto">
+
+        <!-- Hero -->
+        <h1 class="text-2xl font-semibold text-white mb-1.5 text-center">
           Hi <span id="user-greeting-name" class="text-blue-400">Developer</span>, what do you want to make?
         </h1>
-        <p class="text-gray-500 text-sm mb-8">Describe your project and Walia Coder will build it for you.</p>
+        <p class="text-gray-500 text-sm mb-7 text-center">Describe your project and Walia Coder will build it for you.</p>
 
         <!-- AI Input Bar -->
-        <div class="bg-surface border border-gray-700 rounded-xl w-full max-w-3xl shadow-lg focus-within:ring-2 ring-blue-500 transition-all duration-200">
+        <div class="bg-surface border border-gray-700/80 rounded-xl w-full shadow-xl focus-within:ring-2 focus-within:ring-blue-500/50 focus-within:border-blue-500/50 transition-all duration-200">
           <textarea
             id="ai-prompt"
             rows="3"
-            placeholder="Describe your app or ask Walia Coder anything…  e.g. 'Build a SaaS dashboard with auth and Stripe billing'"
+            placeholder="Describe your app… e.g. 'Build a SaaS dashboard with JWT auth, Stripe billing, and a React frontend'"
             class="w-full bg-transparent text-gray-200 placeholder-gray-600 text-sm p-4 resize-none outline-none leading-relaxed"
           ></textarea>
-          <div class="flex items-center justify-between px-4 pb-3">
+          <div class="flex items-center justify-between px-4 pb-3 pt-1">
             <div class="flex items-center gap-2 text-gray-600 text-xs">
               <div class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse-dot"></div>
-              Walia Coder is ready
+              Walia Coder ready
             </div>
-            <button class="flex items-center gap-2 py-2 px-4 bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white text-sm font-semibold rounded-lg transition-all duration-200">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
-              </svg>
+            <button class="btn-primary flex items-center gap-1.5 py-1.5 px-4">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>
               Generate
             </button>
           </div>
         </div>
 
         <!-- Quick Actions -->
-        <div class="flex flex-wrap justify-center gap-3 mt-5 w-full max-w-3xl">
-          <button class="quick-btn">
-            <svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9"/>
-            </svg>
+        <div class="flex flex-wrap justify-center gap-2 mt-4">
+          <button class="quick-pill" onclick="prefillPrompt('website')">
+            <svg class="w-3.5 h-3.5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9"/></svg>
             Website
           </button>
-          <button class="quick-btn">
-            <svg class="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/>
-            </svg>
+          <button class="quick-pill" onclick="prefillPrompt('mobile')">
+            <svg class="w-3.5 h-3.5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
             Mobile App
           </button>
-          <button class="quick-btn">
-            <svg class="w-5 h-5 text-pink-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zm0 8a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zm12 0a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z"/>
-            </svg>
+          <button class="quick-pill" onclick="prefillPrompt('design')">
+            <svg class="w-3.5 h-3.5 text-pink-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zm0 8a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zm12 0a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z"/></svg>
             Design
           </button>
-          <button class="quick-btn">
-            <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4"/>
-            </svg>
+          <button class="quick-pill" onclick="prefillPrompt('database')">
+            <svg class="w-3.5 h-3.5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4"/></svg>
             Database
           </button>
-          <button class="quick-btn">
-            <svg class="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/>
-            </svg>
+          <button class="quick-pill" onclick="prefillPrompt('api')">
+            <svg class="w-3.5 h-3.5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/></svg>
             API Backend
           </button>
-          <button class="quick-btn">
-            <svg class="w-5 h-5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
-            </svg>
+          <button class="quick-pill" onclick="prefillPrompt('dashboard')">
+            <svg class="w-3.5 h-3.5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
             Dashboard
           </button>
         </div>
+      </div>
 
-        <!-- Recent Projects -->
-        <div class="w-full max-w-5xl mt-14">
-          <div class="flex items-center justify-between mb-5">
-            <h2 class="text-base font-semibold text-gray-200">Your recent Projects</h2>
-            <button class="text-xs text-blue-400 hover:text-blue-300 transition-colors font-medium">View all</button>
-          </div>
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
-
-            <!-- Project Card 1 -->
-            <div class="project-card">
-              <div class="h-28 bg-gradient-to-br from-blue-600/20 to-purple-700/20 border-b border-gray-800 flex items-center justify-center">
-                <svg class="w-10 h-10 text-blue-500/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
-                </svg>
-              </div>
-              <div class="p-4">
-                <div class="flex items-start justify-between gap-2">
-                  <p class="text-sm font-semibold text-gray-200">Walia Nexus Identity</p>
-                  <span class="flex-shrink-0 text-xs px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-medium">Live</span>
-                </div>
-                <p class="text-xs text-gray-600 mt-1.5">Auth API &bull; RBAC &bull; PostgreSQL</p>
-                <p class="text-xs text-gray-700 mt-2">2 hours ago</p>
-              </div>
-            </div>
-
-            <!-- Project Card 2 -->
-            <div class="project-card">
-              <div class="h-28 bg-gradient-to-br from-amber-600/20 to-orange-700/20 border-b border-gray-800 flex items-center justify-center">
-                <svg class="w-10 h-10 text-amber-500/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M13 10V3L4 14h7v7l9-11h-7z"/>
-                </svg>
-              </div>
-              <div class="p-4">
-                <div class="flex items-start justify-between gap-2">
-                  <p class="text-sm font-semibold text-gray-200">Walia Coder CLI</p>
-                  <span class="flex-shrink-0 text-xs px-2 py-0.5 rounded-full bg-gray-700/50 text-gray-400 border border-gray-700 font-medium">Private</span>
-                </div>
-                <p class="text-xs text-gray-600 mt-1.5">AI CLI &bull; Bun &bull; TypeScript</p>
-                <p class="text-xs text-gray-700 mt-2">Today</p>
-              </div>
-            </div>
-
-            <!-- New project CTA -->
-            <div class="project-card border-dashed flex items-center justify-center min-h-[160px] group hover:border-blue-500/40">
-              <div class="text-center">
-                <div class="w-10 h-10 rounded-xl border border-dashed border-gray-700 group-hover:border-blue-500/40 flex items-center justify-center mx-auto mb-2 transition-colors">
-                  <svg class="w-5 h-5 text-gray-600 group-hover:text-blue-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-                  </svg>
-                </div>
-                <p class="text-sm text-gray-600 group-hover:text-gray-400 transition-colors">New Project</p>
-              </div>
-            </div>
-
+      <!-- Recent Projects -->
+      <div class="w-full max-w-5xl mx-auto mt-14">
+        <div class="flex items-center justify-between mb-5">
+          <h2 class="text-sm font-semibold text-gray-300 uppercase tracking-wider">Your recent Projects</h2>
+          <button onclick="switchView('projects')" class="text-xs text-blue-400 hover:text-blue-300 transition-colors font-medium">View all →</button>
+        </div>
+        <div id="home-projects-grid" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div class="project-card border-dashed border-gray-700 flex items-center justify-center min-h-[148px]">
+            <p class="text-gray-600 text-sm">Loading projects…</p>
           </div>
         </div>
       </div>
+    </div>
 
-      <!-- ── VIEW: ADMIN / IDENTITY CONTROL ── -->
-      <div id="view-admin" class="hidden p-8 animate-fade-in">
-        <div class="max-w-4xl mx-auto">
-          <div class="mb-6">
-            <h2 class="text-xl font-semibold text-white">Identity Control Center</h2>
-            <p class="text-gray-500 text-sm mt-1">Manage user identities and revoke access across the platform.</p>
+    <!-- ══ VIEW: PROJECTS ══ -->
+    <div id="view-projects" class="view p-8">
+      <div class="max-w-5xl mx-auto">
+        <div class="flex items-center justify-between mb-6">
+          <div>
+            <h2 class="text-xl font-semibold text-white">Projects</h2>
+            <p class="text-gray-500 text-sm mt-0.5">All your generated and configured projects.</p>
           </div>
-
-          <!-- Admin Control Center -->
-          <div class="bg-surface rounded-xl border border-gray-800 overflow-hidden">
-            <div class="flex items-center justify-between px-5 py-4 border-b border-gray-800">
-              <div class="flex items-center gap-2">
-                <div class="w-2 h-2 rounded-full bg-amber-400 animate-pulse-dot"></div>
-                <p class="text-sm font-semibold text-gray-300">Registered Identities</p>
-              </div>
-              <button onclick="fetchAdminPanel()" id="btn-admin"
-                class="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-blue-600/10 hover:bg-blue-600/20 text-blue-400 border border-blue-500/20 transition-all font-medium disabled:opacity-50">
-                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
-                </svg>
-                Refresh
-              </button>
-            </div>
-            <div id="admin-users-container" class="p-5">
-              <p class="text-gray-600 text-sm text-center py-8">Click Refresh to load identity records.</p>
-            </div>
+        </div>
+        <div id="projects-grid" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div class="project-card border-dashed border-gray-700 flex items-center justify-center min-h-[148px]">
+            <p class="text-gray-600 text-sm">Loading…</p>
           </div>
         </div>
       </div>
+    </div>
 
-      <!-- ── VIEW: API EXPLORER ── -->
-      <div id="view-profile-api" class="hidden p-8 animate-fade-in">
-        <div class="max-w-3xl mx-auto">
-          <div class="mb-6">
-            <h2 class="text-xl font-semibold text-white">API Explorer</h2>
-            <p class="text-gray-500 text-sm mt-1">Test protected endpoints with your session token.</p>
+    <!-- ══ VIEW: PUBLISHED ══ -->
+    <div id="view-published" class="view p-8">
+      <div class="max-w-5xl mx-auto">
+        <h2 class="text-xl font-semibold text-white mb-1">Published Projects</h2>
+        <p class="text-gray-500 text-sm mb-6">Deployed apps with live public URLs.</p>
+        <div id="published-grid" class="grid grid-cols-1 md:grid-cols-3 gap-4"></div>
+        <div id="published-empty" class="hidden text-center py-20">
+          <div class="w-12 h-12 rounded-xl bg-surface border border-gray-800 flex items-center justify-center mx-auto mb-3">
+            <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3"/></svg>
           </div>
+          <p class="text-gray-500 text-sm">No published projects yet.</p>
+        </div>
+      </div>
+    </div>
 
-          <!-- Session Info -->
-          <div class="bg-surface rounded-xl border border-gray-800 p-5 mb-4">
-            <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Active Session</p>
-            <div class="grid grid-cols-3 gap-4 mb-4">
-              <div>
-                <p class="text-xs text-gray-600 mb-1">Status</p>
-                <div class="flex items-center gap-1.5">
-                  <div class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse-dot"></div>
-                  <p class="text-emerald-400 text-sm font-semibold">Authenticated</p>
-                </div>
-              </div>
-              <div>
-                <p class="text-xs text-gray-600 mb-1">Session</p>
-                <p class="text-gray-200 text-sm font-semibold">JWT &middot; 7 days</p>
-              </div>
-              <div>
-                <p class="text-xs text-gray-600 mb-1">API</p>
-                <p class="text-amber-400 text-sm font-semibold">v1.0.0 Online</p>
-              </div>
-            </div>
-            <p class="text-xs text-gray-600 mb-2 font-medium uppercase tracking-wider">Token</p>
-            <p id="token-preview" class="font-mono text-xs text-emerald-400 break-all leading-relaxed opacity-70 bg-black/30 rounded-lg p-3"></p>
+    <!-- ══ VIEW: INTEGRATIONS ══ -->
+    <div id="view-integrations" class="view p-8">
+      <div class="max-w-4xl mx-auto">
+        <h2 class="text-xl font-semibold text-white mb-1">Integrations</h2>
+        <p class="text-gray-500 text-sm mb-8">Connect third-party services to extend your workspace.</p>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="bg-surface border border-gray-800 rounded-xl p-5 flex items-center gap-4 opacity-50 cursor-not-allowed">
+            <div class="w-10 h-10 rounded-lg bg-gray-800 flex items-center justify-center flex-shrink-0"><svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg></div>
+            <div><p class="text-sm font-medium text-gray-300">Stripe Payments</p><p class="text-xs text-gray-600 mt-0.5">Coming soon</p></div>
           </div>
+          <div class="bg-surface border border-gray-800 rounded-xl p-5 flex items-center gap-4 opacity-50 cursor-not-allowed">
+            <div class="w-10 h-10 rounded-lg bg-gray-800 flex items-center justify-center flex-shrink-0"><svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/></svg></div>
+            <div><p class="text-sm font-medium text-gray-300">GitHub</p><p class="text-xs text-gray-600 mt-0.5">Coming soon</p></div>
+          </div>
+          <div class="bg-surface border border-gray-800 rounded-xl p-5 flex items-center gap-4 opacity-50 cursor-not-allowed">
+            <div class="w-10 h-10 rounded-lg bg-gray-800 flex items-center justify-center flex-shrink-0"><svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"/></svg></div>
+            <div><p class="text-sm font-medium text-gray-300">Vercel Deploy</p><p class="text-xs text-gray-600 mt-0.5">Coming soon</p></div>
+          </div>
+          <div class="bg-surface border border-gray-800 rounded-xl p-5 flex items-center gap-4 opacity-50 cursor-not-allowed">
+            <div class="w-10 h-10 rounded-lg bg-gray-800 flex items-center justify-center flex-shrink-0"><svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg></div>
+            <div><p class="text-sm font-medium text-gray-300">OpenAI API</p><p class="text-xs text-gray-600 mt-0.5">Coming soon</p></div>
+          </div>
+        </div>
+      </div>
+    </div>
 
-          <!-- Endpoint buttons -->
-          <div class="grid grid-cols-2 gap-3 mb-4">
-            <button id="btn-profile" onclick="fetchProfile()"
-              class="flex items-center gap-2 py-3 px-4 rounded-xl bg-surface hover:bg-white/5 border border-gray-700 hover:border-gray-600 text-gray-300 hover:text-white text-sm font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed">
-              <svg class="w-4 h-4 text-blue-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
-              </svg>
-              GET /api/users/me
-            </button>
-            <button onclick="switchView('admin', document.querySelector('.nav-item[onclick*=\"admin\"]'))"
-              class="flex items-center gap-2 py-3 px-4 rounded-xl bg-amber-500/5 hover:bg-amber-500/10 border border-amber-500/20 hover:border-amber-500/40 text-amber-400 hover:text-amber-300 text-sm font-medium transition-all duration-200">
-              <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
-              </svg>
-              Admin Control Center
+    <!-- ══ VIEW: SETTINGS ══ -->
+    <div id="view-settings" class="view p-8">
+      <div class="max-w-2xl mx-auto">
+        <h2 class="text-xl font-semibold text-white mb-1">Settings</h2>
+        <p class="text-gray-500 text-sm mb-8">Workspace and account preferences.</p>
+        <div class="bg-surface border border-gray-800 rounded-xl divide-y divide-gray-800">
+          <div class="p-5 flex items-center justify-between">
+            <div><p class="text-sm font-medium text-gray-200">Email</p><p id="settings-email" class="text-xs text-gray-500 mt-0.5">—</p></div>
+          </div>
+          <div class="p-5 flex items-center justify-between">
+            <div><p class="text-sm font-medium text-gray-200">Role</p><p id="settings-role" class="text-xs text-gray-500 mt-0.5">—</p></div>
+          </div>
+          <div class="p-5 flex items-center justify-between">
+            <div><p class="text-sm font-medium text-gray-200">Session</p><p class="text-xs text-gray-500 mt-0.5">JWT — expires in 7 days</p></div>
+          </div>
+          <div class="p-5">
+            <button onclick="handleLogout()" class="flex items-center gap-2 py-2 px-4 rounded-lg border border-red-800/50 text-red-400 hover:bg-red-900/20 text-sm font-medium transition-colors">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+              Sign Out
             </button>
           </div>
+        </div>
+      </div>
+    </div>
 
-          <!-- Profile Response -->
-          <div id="profile-response" class="hidden bg-surface rounded-xl border border-gray-800 p-5">
-            <div class="flex items-center gap-2 mb-3">
-              <div class="w-2 h-2 rounded-full bg-blue-400"></div>
-              <p class="text-gray-500 text-xs font-semibold uppercase tracking-wider">GET /api/users/me — Response</p>
+    <!-- ══ VIEW: ADMIN — IDENTITY CONTROL ══ -->
+    <div id="view-admin" class="view p-8">
+      <div class="max-w-4xl mx-auto">
+        <div class="mb-6">
+          <h2 class="text-xl font-semibold text-white">Identity Control</h2>
+          <p class="text-gray-500 text-sm mt-0.5">Manage user identities and hard-revoke platform access.</p>
+        </div>
+        <div class="bg-surface rounded-xl border border-gray-800 overflow-hidden">
+          <div class="flex items-center justify-between px-5 py-3.5 border-b border-gray-800">
+            <div class="flex items-center gap-2">
+              <div class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse-dot"></div>
+              <p class="text-sm font-semibold text-gray-300">Registered Identities</p>
             </div>
-            <pre class="text-xs font-mono text-emerald-400 break-all whitespace-pre-wrap"></pre>
+            <button onclick="fetchAdminPanel()" id="btn-admin"
+              class="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-blue-600/10 hover:bg-blue-600/20 text-blue-400 border border-blue-500/20 transition-all font-medium disabled:opacity-40">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+              Refresh
+            </button>
+          </div>
+          <div id="admin-users-container" class="p-5">
+            <p class="text-gray-600 text-sm text-center py-8">Click Refresh to load identity records.</p>
           </div>
         </div>
       </div>
+    </div>
 
-      <!-- ── VIEW: GENERIC PLACEHOLDER ── -->
-      <div id="view-projects" class="hidden p-8 animate-fade-in">
-        <div class="max-w-3xl mx-auto text-center pt-20">
-          <div class="w-14 h-14 rounded-2xl bg-surface border border-gray-800 flex items-center justify-center mx-auto mb-4">
-            <svg class="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
-            </svg>
-          </div>
-          <h3 class="text-lg font-semibold text-gray-300 mb-2">Projects</h3>
-          <p class="text-gray-600 text-sm">Your projects will appear here once created.</p>
-        </div>
-      </div>
-      <div id="view-published" class="hidden p-8 animate-fade-in">
-        <div class="max-w-3xl mx-auto text-center pt-20">
-          <div class="w-14 h-14 rounded-2xl bg-surface border border-gray-800 flex items-center justify-center mx-auto mb-4">
-            <svg class="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9"/>
-            </svg>
-          </div>
-          <h3 class="text-lg font-semibold text-gray-300 mb-2">Published Projects</h3>
-          <p class="text-gray-600 text-sm">Deployed apps will be listed here.</p>
-        </div>
-      </div>
-      <div id="view-integrations" class="hidden p-8 animate-fade-in">
-        <div class="max-w-3xl mx-auto text-center pt-20">
-          <div class="w-14 h-14 rounded-2xl bg-surface border border-gray-800 flex items-center justify-center mx-auto mb-4">
-            <svg class="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M11 4a2 2 0 114 0v1a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-1a2 2 0 100 4h1a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-1a2 2 0 10-4 0v1a1 1 0 01-1 1H7a1 1 0 01-1-1v-3a1 1 0 00-1-1H4a2 2 0 110-4h1a1 1 0 001-1V7a1 1 0 011-1h3a1 1 0 001-1V4z"/>
-            </svg>
-          </div>
-          <h3 class="text-lg font-semibold text-gray-300 mb-2">Integrations</h3>
-          <p class="text-gray-600 text-sm">Connect third-party services to extend your workspace.</p>
-        </div>
-      </div>
-      <div id="view-settings" class="hidden p-8 animate-fade-in">
-        <div class="max-w-3xl mx-auto text-center pt-20">
-          <div class="w-14 h-14 rounded-2xl bg-surface border border-gray-800 flex items-center justify-center mx-auto mb-4">
-            <svg class="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-            </svg>
-          </div>
-          <h3 class="text-lg font-semibold text-gray-300 mb-2">Settings</h3>
-          <p class="text-gray-600 text-sm">Workspace configuration coming soon.</p>
-        </div>
-      </div>
+    <!-- ══ VIEW: API EXPLORER ══ -->
+    <div id="view-api-explorer" class="view p-8">
+      <div class="max-w-3xl mx-auto">
+        <h2 class="text-xl font-semibold text-white mb-1">API Explorer</h2>
+        <p class="text-gray-500 text-sm mb-6">Test live protected endpoints with your active session token.</p>
 
-    </main>
-  </div>
+        <div class="bg-surface rounded-xl border border-gray-800 p-5 mb-4">
+          <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4">Session Status</p>
+          <div class="grid grid-cols-3 gap-4 mb-4">
+            <div><p class="text-xs text-gray-600 mb-1">Status</p>
+              <div class="flex items-center gap-1.5"><div class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse-dot"></div><p class="text-emerald-400 text-sm font-semibold">Authenticated</p></div>
+            </div>
+            <div><p class="text-xs text-gray-600 mb-1">Session</p><p class="text-gray-200 text-sm font-semibold">JWT · 7 days</p></div>
+            <div><p class="text-xs text-gray-600 mb-1">API</p><p class="text-amber-400 text-sm font-semibold">v1.0.0 Online</p></div>
+          </div>
+          <p class="text-xs text-gray-600 mb-2 font-semibold uppercase tracking-wider">Bearer Token</p>
+          <p id="token-preview" class="font-mono text-xs text-emerald-400 break-all leading-relaxed bg-black/30 rounded-lg p-3 opacity-70"></p>
+        </div>
 
-  <script src="app.js"></script>
+        <div class="grid grid-cols-2 gap-3 mb-4">
+          <button id="btn-profile" onclick="fetchProfile()"
+            class="flex items-center gap-2 py-2.5 px-4 rounded-xl bg-surface hover:bg-white/5 border border-gray-700 hover:border-gray-600 text-gray-300 hover:text-white text-sm font-medium transition-all disabled:opacity-50">
+            <svg class="w-4 h-4 text-blue-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+            GET /api/users/me
+          </button>
+          <button onclick="switchView('admin')"
+            class="flex items-center gap-2 py-2.5 px-4 rounded-xl bg-amber-500/5 hover:bg-amber-500/10 border border-amber-500/20 text-amber-400 text-sm font-medium transition-all">
+            <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+            Identity Control
+          </button>
+        </div>
+
+        <div id="profile-response" class="hidden bg-surface rounded-xl border border-gray-800 p-5">
+          <div class="flex items-center gap-2 mb-3">
+            <div class="w-1.5 h-1.5 rounded-full bg-blue-400"></div>
+            <p class="text-gray-500 text-xs font-semibold uppercase tracking-wider">GET /api/users/me — Response</p>
+          </div>
+          <pre class="text-xs font-mono break-all whitespace-pre-wrap"></pre>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script src="app.js"></script>
 </body>
 </html>

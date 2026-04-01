@@ -1,0 +1,33 @@
+**Role:** You are a Principal Full-Stack Architect and Lead UI/UX Designer. We are building the 'Walia Coder' Client Workspace—a high-fidelity, AI-native environment for enterprise-grade project generation.
+
+**Architectural Objective:** Transform the current application into a professional Single Page Application (SPA). Every sidebar link must be "clickable" and render a distinct, high-quality view without a full page reload.
+
+**1. The "Deep-Dark" Visual Identity (Tailwind CSS):**
+- **Theme:** Strict Dark Mode. Background: `#0e1117`. Sidebars/Cards: `#1c2333`.
+- **Typography:** Inter or Geist Mono. High-contrast white for headers, slate-400 for secondary text.
+- **Accents:** Walia Steel Blue (`#3b82f6`) and Warning Gold (`#f59e0b`) for status badges.
+
+**2. Sidebar & Navigation Logic (The Engine):**
+- Implement a robust Sidebar with the following clickable routes:
+  - **Main:** 'Create something new' (Primary Action), 'Home' (Dashboard), 'Projects', 'Published Projects'.
+  - **Tools:** 'Integrations', 'Settings'.
+  - **Admin (RBAC Protected):** 'Identity Control', 'API Explorer'.
+- **SPA Routing:** Use a centralized 'view-switcher' logic. Clicking a sidebar item must instantly update the main content area with its corresponding page.
+
+**3. The Command Center (Main View):**
+- **Personalized Hero:** "Hi [Username], what do you want to make?" (Pull name from JWT).
+- **Prompt Architecture:** A large, focused `textarea` with a sleek 'Generate' button. Below it, a row of Quick-Action icons: Website, Mobile App, Design, Database, API Backend, Dashboard. 
+- **Action:** Clicking a Quick-Action should pre-fill the prompt bar with a professional template.
+
+**4. Project Grid (Dynamic Hydration):**
+- Build the 'Your recent Projects' grid using CSS Grid. 
+- **Card Design:** Each card needs a title, a technology stack list (e.g., Auth API • RBAC), a timestamp, and a status badge ('Live' or 'Private'). 
+- **Database:** Hydrate this grid from the PostgreSQL 'projects' table. Show a 'New Project' dashed-placeholder card as the final item in the grid.
+
+**5. High-Quality Finish:**
+- Add `backdrop-blur-md` to the sidebar.
+- Implement smooth transitions between pages.
+- Ensure the 'Identity Control' page in the Admin section renders our previously built user-management table.
+
+**Action Required:**
+Update `index.html` and `app.js` to implement this layout and the SPA routing logic. Ensure all sidebar links are wired and functional. Output a confirmation when the 'walianexus2025 Workspace' is live and clickable.
