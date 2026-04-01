@@ -85,6 +85,43 @@
 
     .alert-error { background: rgba(239,68,68,0.1); color: #fca5a5; border: 1px solid rgba(239,68,68,0.2); border-radius: 8px; padding: 10px 14px; font-size: 0.875rem; }
     .alert-success { background: rgba(16,185,129,0.1); color: #6ee7b7; border: 1px solid rgba(16,185,129,0.2); border-radius: 8px; padding: 10px 14px; font-size: 0.875rem; }
+
+    /* Modal overlay */
+    .modal-overlay {
+      position: fixed; inset: 0; z-index: 100;
+      background: rgba(0,0,0,0.65); backdrop-filter: blur(4px);
+      display: flex; align-items: center; justify-content: center; padding: 16px;
+      animation: fadeIn 0.15s ease-out;
+    }
+    .modal-box {
+      background: #1c2333; border: 1px solid #374151; border-radius: 16px;
+      box-shadow: 0 24px 64px rgba(0,0,0,0.6); width: 100%; max-width: 440px;
+      animation: slideUp 0.22s cubic-bezier(0.16,1,0.3,1);
+    }
+
+    /* Card management menu */
+    .card-menu-btn {
+      opacity: 0; pointer-events: none;
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 28px; height: 28px; border-radius: 7px; border: none; cursor: pointer;
+      transition: all 0.15s; font-size: 0.8rem;
+    }
+    .project-card:hover .card-menu-btn { opacity: 1; pointer-events: auto; }
+    .card-menu-edit { background: rgba(59,130,246,0.15); color: #93c5fd; }
+    .card-menu-edit:hover { background: rgba(59,130,246,0.3); color: #bfdbfe; }
+    .card-menu-delete { background: rgba(239,68,68,0.12); color: #fca5a5; }
+    .card-menu-delete:hover { background: rgba(239,68,68,0.25); color: #fecaca; }
+
+    /* Input for modals */
+    .modal-input {
+      width: 100%; padding: 9px 13px; border-radius: 8px;
+      border: 1px solid #374151; background: #0e1117;
+      color: #e2e8f0; font-size: 0.875rem; outline: none;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .modal-input::placeholder { color: #4b5563; }
+    .modal-input:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.12); }
+    .modal-input option { background: #1c2333; }
   </style>
 </head>
 <body class="bg-canvas text-gray-200 h-screen flex overflow-hidden">
@@ -507,6 +544,87 @@
     </div>
 
   </main>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+     DELETE CONFIRMATION MODAL
+════════════════════════════════════════════════════ -->
+<div id="delete-modal" class="modal-overlay hidden" onclick="handleDeleteModalBackdrop(event)">
+  <div class="modal-box" role="dialog" aria-modal="true">
+    <div class="p-6">
+      <!-- Icon -->
+      <div class="flex items-center justify-center w-12 h-12 rounded-full bg-red-500/10 border border-red-500/20 mx-auto mb-5">
+        <svg class="w-6 h-6 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+        </svg>
+      </div>
+      <h3 class="text-white font-semibold text-center text-lg mb-2">Delete Project</h3>
+      <p class="text-gray-400 text-sm text-center mb-1">This action cannot be undone. The project</p>
+      <p class="text-white font-semibold text-sm text-center mb-6" id="delete-modal-title">"Untitled Project"</p>
+
+      <div id="delete-modal-error" class="hidden mb-4 px-3 py-2 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-xs font-mono"></div>
+
+      <div class="flex gap-3">
+        <button onclick="closeDeleteModal()" class="flex-1 py-2.5 px-4 rounded-xl border border-gray-700 text-gray-300 hover:text-white hover:border-gray-600 text-sm font-semibold transition-all">
+          Cancel
+        </button>
+        <button id="btn-confirm-delete" onclick="executeDelete()" class="flex-1 py-2.5 px-4 rounded-xl bg-red-600 hover:bg-red-700 active:bg-red-800 text-white text-sm font-semibold transition-all disabled:opacity-50 flex items-center justify-center gap-2">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+          Delete Project
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+     EDIT PROJECT MODAL
+════════════════════════════════════════════════════ -->
+<div id="edit-modal" class="modal-overlay hidden" onclick="handleEditModalBackdrop(event)">
+  <div class="modal-box" role="dialog" aria-modal="true">
+    <div class="flex items-center justify-between px-6 pt-6 pb-4 border-b border-gray-700/60">
+      <div class="flex items-center gap-3">
+        <div class="w-8 h-8 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center">
+          <svg class="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+          </svg>
+        </div>
+        <h3 class="text-white font-semibold text-base">Edit Project</h3>
+      </div>
+      <button onclick="closeEditModal()" class="text-gray-600 hover:text-gray-300 transition-colors p-1 rounded-lg hover:bg-white/5">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="p-6 space-y-4">
+      <input type="hidden" id="edit-project-id" />
+      <div>
+        <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Project Title</label>
+        <input id="edit-title" type="text" class="modal-input" placeholder="e.g. Walia Nexus Identity API" />
+      </div>
+      <div>
+        <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Tech Stack</label>
+        <input id="edit-stack" type="text" class="modal-input" placeholder="e.g. React • Vite • PostgreSQL" />
+      </div>
+      <div>
+        <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Status</label>
+        <select id="edit-status" class="modal-input cursor-pointer">
+          <option value="private">Private</option>
+          <option value="live">Live</option>
+          <option value="building">Building</option>
+        </select>
+      </div>
+      <div id="edit-modal-error" class="hidden px-3 py-2 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-xs font-mono"></div>
+    </div>
+    <div class="px-6 pb-6 flex gap-3">
+      <button onclick="closeEditModal()" class="flex-1 py-2.5 px-4 rounded-xl border border-gray-700 text-gray-300 hover:text-white hover:border-gray-600 text-sm font-semibold transition-all">
+        Cancel
+      </button>
+      <button id="btn-save-edit" onclick="saveEditProject()" class="flex-1 py-2.5 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold transition-all disabled:opacity-50 flex items-center justify-center gap-2">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+        Save Changes
+      </button>
+    </div>
+  </div>
 </div>
 
 <script src="app.js"></script>

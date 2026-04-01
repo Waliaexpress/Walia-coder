@@ -13,6 +13,8 @@ const PROMPT_TEMPLATES = {
 
 // ─── State ────────────────────────────────────────────────────────────────────
 
+const _projectsCache = {};   // id → project object
+
 function getToken()  { return localStorage.getItem("walia_token"); }
 function getUser()   { try { return JSON.parse(localStorage.getItem("walia_user") || "null"); } catch { return null; } }
 function saveSession(token, user) {
@@ -132,18 +134,41 @@ const CARD_GRADIENTS = [
   "from-cyan-600/15 to-blue-700/15",
 ];
 
+function escapeHtml(str) {
+  return String(str).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+}
+
 function buildProjectCard(p, idx) {
-  const gradient = CARD_GRADIENTS[idx % CARD_GRADIENTS.length];
+  const gradient  = CARD_GRADIENTS[idx % CARD_GRADIENTS.length];
   const statusClass = `status-${p.status}`;
   const stackPills  = (p.stack || "").split("•").map(s => s.trim()).filter(Boolean)
-    .map(s => `<span class="px-1.5 py-0.5 rounded bg-gray-800 text-gray-400 text-xs border border-gray-700/60">${s}</span>`).join(" ");
+    .map(s => `<span class="px-1.5 py-0.5 rounded bg-gray-800 text-gray-400 text-xs border border-gray-700/60">${escapeHtml(s)}</span>`).join(" ");
 
-  return `<div class="project-card">
-    <div class="h-24 bg-gradient-to-br ${gradient} flex items-end px-4 pb-3 border-b border-gray-800/60">
+  const safeTitle = escapeHtml(p.title);
+  const safeStack = escapeHtml(p.stack || "");
+
+  return `<div class="project-card" id="card-${p.id}">
+    <div class="h-24 bg-gradient-to-br ${gradient} flex items-end justify-between px-4 pb-3 border-b border-gray-800/60">
       <span class="px-2 py-0.5 rounded-full text-xs font-semibold ${statusClass}">${p.status}</span>
+      <div class="flex items-center gap-1.5">
+        <button
+          class="card-menu-btn card-menu-edit"
+          title="Edit project"
+          onclick="event.stopPropagation(); openEditModal('${p.id}')"
+          aria-label="Edit">
+          <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+        </button>
+        <button
+          class="card-menu-btn card-menu-delete"
+          title="Delete project"
+          onclick="event.stopPropagation(); openDeleteModal('${p.id}', '${safeTitle}')"
+          aria-label="Delete">
+          <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+        </button>
+      </div>
     </div>
     <div class="p-4">
-      <p class="text-sm font-semibold text-gray-100 mb-1.5 truncate">${p.title}</p>
+      <p class="text-sm font-semibold text-gray-100 mb-1.5 truncate">${safeTitle}</p>
       <div class="flex flex-wrap gap-1 mb-2">${stackPills}</div>
       <p class="text-xs text-gray-600">${timeAgo(p.createdAt)}</p>
     </div>
@@ -169,6 +194,7 @@ async function loadHomeProjects() {
     if (!res.ok) { grid.innerHTML = buildNewProjectCard(); return; }
 
     const projects = Array.isArray(data) ? data : (data.projects || []);
+    projects.forEach(p => { _projectsCache[p.id] = p; });
     const cards = projects.slice(0, 5).map((p, i) => buildProjectCard(p, i)).join("");
     grid.innerHTML = cards + buildNewProjectCard();
   } catch {
@@ -187,6 +213,7 @@ async function loadProjectsView(viewName) {
     if (!res.ok) { if (grid) grid.innerHTML = ""; return; }
 
     let projects = Array.isArray(data) ? data : (data.projects || []);
+    projects.forEach(p => { _projectsCache[p.id] = p; });
     if (viewName === "published") {
       projects = projects.filter(p => p.status === "live");
       const emptyEl = document.getElementById("published-empty");
@@ -200,6 +227,180 @@ async function loadProjectsView(viewName) {
     grid.innerHTML = cards + (viewName === "projects" ? buildNewProjectCard() : "");
   } catch {
     if (grid) grid.innerHTML = `<p class="text-red-400 text-sm">Failed to load projects.</p>`;
+  }
+}
+
+// ─── Delete Modal ─────────────────────────────────────────────────────────────
+
+let _deleteTargetId    = null;
+let _deleteTargetCard  = null;
+
+function openDeleteModal(projectId, title) {
+  _deleteTargetId = projectId;
+  document.getElementById("delete-modal-title").textContent = `"${title}"`;
+  document.getElementById("delete-modal-error").classList.add("hidden");
+  const btn = document.getElementById("btn-confirm-delete");
+  btn.disabled = false;
+  btn.innerHTML = `<svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg> Delete Project`;
+  document.getElementById("delete-modal").classList.remove("hidden");
+}
+
+function closeDeleteModal() {
+  document.getElementById("delete-modal").classList.add("hidden");
+  _deleteTargetId   = null;
+  _deleteTargetCard = null;
+}
+
+function handleDeleteModalBackdrop(e) {
+  if (e.target === document.getElementById("delete-modal")) closeDeleteModal();
+}
+
+async function executeDelete() {
+  if (!_deleteTargetId) return;
+
+  const btn     = document.getElementById("btn-confirm-delete");
+  const errBox  = document.getElementById("delete-modal-error");
+  const id      = _deleteTargetId;
+
+  // Optimistic UI — hide card immediately
+  const cardEl = document.getElementById(`card-${id}`);
+  if (cardEl) {
+    cardEl.style.transition = "opacity 0.2s, transform 0.2s";
+    cardEl.style.opacity    = "0";
+    cardEl.style.transform  = "scale(0.95)";
+  }
+
+  btn.disabled = true;
+  btn.innerHTML = `<svg class="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg> Deleting…`;
+  errBox.classList.add("hidden");
+
+  try {
+    const res  = await authFetch(`/api/projects/${id}`, { method: "DELETE" });
+    const data = await res.json();
+
+    if (!res.ok) {
+      // Revert optimistic removal on failure
+      if (cardEl) { cardEl.style.opacity = "1"; cardEl.style.transform = ""; }
+      errBox.textContent = data.error || "Deletion failed. Please try again.";
+      errBox.classList.remove("hidden");
+      btn.disabled = false;
+      btn.innerHTML = `<svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg> Delete Project`;
+      return;
+    }
+
+    // Confirmed — remove from DOM and cache
+    delete _projectsCache[id];
+    setTimeout(() => { if (cardEl) cardEl.remove(); }, 200);
+    closeDeleteModal();
+    // Refresh both grids silently
+    loadHomeProjects();
+    const projectsGrid = document.getElementById("projects-grid");
+    if (projectsGrid) loadProjectsView("projects");
+  } catch {
+    if (cardEl) { cardEl.style.opacity = "1"; cardEl.style.transform = ""; }
+    errBox.textContent = "Network error — please try again.";
+    errBox.classList.remove("hidden");
+    btn.disabled = false;
+    btn.innerHTML = `<svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg> Delete Project`;
+  }
+}
+
+// ─── Edit Modal ───────────────────────────────────────────────────────────────
+
+let _editTargetId = null;
+
+function openEditModal(projectId) {
+  const p = _projectsCache[projectId];
+  if (!p) return;
+
+  _editTargetId = projectId;
+  document.getElementById("edit-project-id").value  = p.id;
+  document.getElementById("edit-title").value        = p.title || "";
+  document.getElementById("edit-stack").value        = p.stack || "";
+  document.getElementById("edit-status").value       = p.status || "private";
+  document.getElementById("edit-modal-error").classList.add("hidden");
+
+  const btn = document.getElementById("btn-save-edit");
+  btn.disabled  = false;
+  btn.innerHTML = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg> Save Changes`;
+
+  document.getElementById("edit-modal").classList.remove("hidden");
+  setTimeout(() => document.getElementById("edit-title").focus(), 50);
+}
+
+function closeEditModal() {
+  document.getElementById("edit-modal").classList.add("hidden");
+  _editTargetId = null;
+}
+
+function handleEditModalBackdrop(e) {
+  if (e.target === document.getElementById("edit-modal")) closeEditModal();
+}
+
+async function saveEditProject() {
+  const id     = _editTargetId;
+  const title  = document.getElementById("edit-title").value.trim();
+  const stack  = document.getElementById("edit-stack").value.trim();
+  const status = document.getElementById("edit-status").value;
+  const errBox = document.getElementById("edit-modal-error");
+  const btn    = document.getElementById("btn-save-edit");
+
+  if (!title) {
+    errBox.textContent = "Title is required.";
+    errBox.classList.remove("hidden");
+    document.getElementById("edit-title").focus();
+    return;
+  }
+
+  btn.disabled  = true;
+  btn.innerHTML = `<svg class="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg> Saving…`;
+  errBox.classList.add("hidden");
+
+  try {
+    const res  = await authFetch(`/api/projects/${id}`, {
+      method:  "PUT",
+      headers: { "Content-Type": "application/json" },
+      body:    JSON.stringify({ title, stack, status }),
+    });
+    const data = await res.json();
+
+    if (!res.ok) {
+      errBox.textContent = data.error || "Update failed.";
+      errBox.classList.remove("hidden");
+      btn.disabled  = false;
+      btn.innerHTML = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg> Save Changes`;
+      return;
+    }
+
+    // Update cache with new data
+    _projectsCache[id] = { ..._projectsCache[id], ...data };
+
+    // Optimistically patch visible card
+    const cardEl = document.getElementById(`card-${id}`);
+    if (cardEl) {
+      const titleEl = cardEl.querySelector(".text-sm.font-semibold.text-gray-100");
+      if (titleEl) titleEl.textContent = data.title;
+
+      const badgeEl = cardEl.querySelector(`[class*="status-"]`);
+      if (badgeEl) {
+        badgeEl.className = `px-2 py-0.5 rounded-full text-xs font-semibold status-${data.status}`;
+        badgeEl.textContent = data.status;
+      }
+
+      const pillContainer = cardEl.querySelector(".flex.flex-wrap.gap-1");
+      if (pillContainer && data.stack) {
+        const newPills = data.stack.split("•").map(s => s.trim()).filter(Boolean)
+          .map(s => `<span class="px-1.5 py-0.5 rounded bg-gray-800 text-gray-400 text-xs border border-gray-700/60">${escapeHtml(s)}</span>`).join(" ");
+        pillContainer.innerHTML = newPills;
+      }
+    }
+
+    closeEditModal();
+  } catch {
+    errBox.textContent = "Network error — please try again.";
+    errBox.classList.remove("hidden");
+    btn.disabled  = false;
+    btn.innerHTML = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg> Save Changes`;
   }
 }
 

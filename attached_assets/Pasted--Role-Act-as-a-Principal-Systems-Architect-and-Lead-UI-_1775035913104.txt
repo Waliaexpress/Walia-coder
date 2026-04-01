@@ -1,0 +1,28 @@
+**Role:** Act as a Principal Systems Architect and Lead UI/UX Engineer with 40 years of multi-platform expertise. We are building the 'Walia Coder' ecosystem—a high-performance, enterprise-grade suite of systems.
+
+**1. The "Walia Standard" Engineering Directives (500% Perfection):**
+- **Code Quality:** All code must be 'Production-Ready.' Use a modular 'Clean Architecture' (Repository Pattern). Decouple logic from UI. No placeholders.
+- **Performance:** Optimize for sub-100ms response times. Implement lazy loading and efficient PostgreSQL indexing via Prisma.
+- **The Lifecycle (Clickable, Editable, Deletable):** Every UI element must support a full data lifecycle. 
+   - **Clickable:** Instant navigation/selection via SPA routing.
+   - **Editable:** Real-time inline editing or modal-based updates.
+   - **Deletable:** Implement a secure 'Soft Delete' or 'Hard Delete' mechanism. Every delete action MUST be preceded by a professional-grade Confirmation Modal to prevent accidental data loss.
+
+**2. Visual Identity & UX (The Vibe):**
+- **Theme:** Strict 'Deep-Dark' Obsidian (Background: #0e1117 | Panels: #1c2333). 
+- **Accents:** Electric Blue (#3b82f6) for primary actions; Warning Gold (#f59e0b) for status; Danger Red (#ef4444) for delete/destructive actions.
+- **Animations:** Use 'framer-motion' for 60fps micro-interactions. Implement 'Optimistic UI'—when a project is deleted, it should vanish from the UI instantly while the backend processes the request.
+
+**3. Multi-Platform Capability:**
+- **Stack:** React 19 + Vite + Tailwind CSS + Node.js/TypeScript + PostgreSQL (Prisma).
+- **Security:** Strict JWT-based RBAC (Admin/User). Secure all 'Delete' endpoints with 'requireAdmin' or 'isOwner' middleware.
+
+**4. The Functional "Master Workspace" Logic:**
+- **SPA Routing:** Centralized state-driven view-switcher. 
+- **Project Management:** The 'Projects' grid must be dynamic. Each card must feature: Title, Stack-Tags, Live/Private status, and a 'Management Menu' (Edit/Delete).
+- **Persistence Layer:** All mutations (Create, Edit, Delete) must persist in PostgreSQL immediately. 
+
+**Immediate Task (Phase 1):**
+Re-initialize the project folder. Build the Global Layout Shell (Sidebar + Main Canvas). Implement the Dynamic Project Grid with 'Edit' and 'Delete' buttons on each card. Wire the 'Delete' button to a Tailwind-styled Confirmation Modal that triggers the backend removal logic.
+
+**Action:** Begin the high-performance, full-lifecycle scaffold now. Output the file structure once the 'Delete' flow is verified.

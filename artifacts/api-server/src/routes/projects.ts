@@ -107,6 +107,50 @@ router.get("/projects/:id", requireAuth, async (req, res) => {
   res.status(200).json(project);
 });
 
+router.put("/projects/:id", requireAuth, async (req, res) => {
+  const userId = req.user!.sub;
+  const { id } = req.params;
+  const { title, stack, status } = req.body as {
+    title?: string;
+    stack?: string;
+    status?: "live" | "private" | "building";
+  };
+
+  const [existing] = await db
+    .select({ id: projectsTable.id })
+    .from(projectsTable)
+    .where(and(eq(projectsTable.id, id), eq(projectsTable.userId, userId)))
+    .limit(1);
+
+  if (!existing) {
+    res.status(404).json({ error: "Project not found" });
+    return;
+  }
+
+  const updates: Partial<typeof projectsTable.$inferInsert> = {};
+  if (title && title.trim()) updates.title = title.trim();
+  if (stack !== undefined) updates.stack = stack;
+  if (status) updates.status = status;
+  if (Object.keys(updates).length === 0) {
+    res.status(400).json({ error: "No valid fields to update." });
+    return;
+  }
+
+  const [updated] = await db
+    .update(projectsTable)
+    .set({ ...updates, updatedAt: new Date() })
+    .where(and(eq(projectsTable.id, id), eq(projectsTable.userId, userId)))
+    .returning({
+      id: projectsTable.id,
+      title: projectsTable.title,
+      stack: projectsTable.stack,
+      status: projectsTable.status,
+      createdAt: projectsTable.createdAt,
+    });
+
+  res.status(200).json(updated);
+});
+
 router.delete("/projects/:id", requireAuth, async (req, res) => {
   const userId = req.user!.sub;
   const { id } = req.params;
