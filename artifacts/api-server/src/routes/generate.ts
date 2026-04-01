@@ -1,8 +1,12 @@
 import { Router, type IRouter } from "express";
-import { openai } from "@workspace/integrations-openai-ai-server";
+import OpenAI from "openai";
 import { db, projectsTable } from "@workspace/db";
 import { requireAuth } from "../middlewares/auth.js";
 import { logger } from "../lib/logger.js";
+
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
 
 const router: IRouter = Router();
 
