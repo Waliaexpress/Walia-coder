@@ -209,16 +209,108 @@ async function fetchProfile() {
   }
 }
 
+async function revokeUser(userId, rowElement) {
+  const token = getToken();
+  const btn = rowElement.querySelector(".revoke-btn");
+  btn.disabled = true;
+  btn.textContent = "Revoking…";
+
+  try {
+    const res = await fetch(`/api/admin/users/${userId}`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const data = await res.json();
+
+    if (res.ok) {
+      rowElement.remove();
+    } else {
+      btn.disabled = false;
+      btn.textContent = "Revoke Access";
+      alert(data.error || "Revocation failed.");
+    }
+  } catch (err) {
+    btn.disabled = false;
+    btn.textContent = "Revoke Access";
+    alert("Network error during revocation.");
+  }
+}
+
+function renderUsersTable(users, currentUserId) {
+  const container = document.getElementById("admin-users-container");
+
+  if (!users.length) {
+    container.innerHTML = `<p class="text-slate-400 text-sm">No users found.</p>`;
+    return;
+  }
+
+  const roleColor = (role) => {
+    if (role === "admin") return "bg-amber-500/20 text-amber-400";
+    if (role === "manager") return "bg-blue-500/20 text-blue-400";
+    return "bg-slate-700 text-slate-300";
+  };
+
+  const rows = users.map((u) => {
+    const isSelf = u.id === currentUserId;
+    const actionCell = isSelf
+      ? `<td class="px-3 py-2 text-slate-500 text-sm italic">Current session</td>`
+      : `<td class="px-3 py-2">
+           <button
+             class="revoke-btn bg-red-600 hover:bg-red-700 text-white font-bold py-1 px-3 rounded text-sm transition-colors"
+             onclick="revokeUser('${u.id}', this.closest('tr'))"
+           >Revoke Access</button>
+         </td>`;
+
+    return `<tr class="border-t border-slate-700/50 hover:bg-slate-700/30 transition-colors">
+      <td class="px-3 py-2 text-slate-200 text-sm font-mono">${u.email}</td>
+      <td class="px-3 py-2">
+        <span class="px-2 py-0.5 rounded text-xs font-semibold ${roleColor(u.role)}">${u.role}</span>
+      </td>
+      <td class="px-3 py-2 text-slate-400 text-xs">${new Date(u.createdAt).toLocaleDateString()}</td>
+      ${actionCell}
+    </tr>`;
+  });
+
+  container.innerHTML = `
+    <div class="overflow-x-auto">
+      <table class="w-full text-left">
+        <thead>
+          <tr class="text-slate-500 text-xs uppercase tracking-wider">
+            <th class="px-3 py-2">Email</th>
+            <th class="px-3 py-2">Role</th>
+            <th class="px-3 py-2">Joined</th>
+            <th class="px-3 py-2">Action</th>
+          </tr>
+        </thead>
+        <tbody>${rows.join("")}</tbody>
+      </table>
+    </div>`;
+}
+
 async function fetchAdminPanel() {
   const btn = document.getElementById("btn-admin");
   btn.disabled = true;
   btn.textContent = "Fetching…";
   try {
-    const res = await authFetch("/api/admin/system");
+    const res = await authFetch("/api/admin/users");
     const data = await res.json();
-    renderApiResponse("admin-response", data, !res.ok);
+
+    const panel = document.getElementById("admin-response");
+    panel.classList.remove("hidden");
+
+    if (!res.ok) {
+      document.getElementById("admin-users-container").innerHTML =
+        `<pre class="text-xs font-mono text-red-400 break-all whitespace-pre-wrap">${JSON.stringify(data, null, 2)}</pre>`;
+      return;
+    }
+
+    const currentUserId = getUser()?.sub ?? null;
+    renderUsersTable(data.users, currentUserId);
   } catch (err) {
-    renderApiResponse("admin-response", { error: "Network error" }, true);
+    const panel = document.getElementById("admin-response");
+    panel.classList.remove("hidden");
+    document.getElementById("admin-users-container").innerHTML =
+      `<pre class="text-xs font-mono text-red-400">Network error</pre>`;
   } finally {
     btn.disabled = false;
     btn.textContent = "Access Admin Panel";
