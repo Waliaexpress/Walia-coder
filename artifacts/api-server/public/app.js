@@ -215,6 +215,128 @@ function prefillPrompt(type) {
   }
 }
 
+// ─── AI Generate ──────────────────────────────────────────────────────────────
+
+let currentGeneratedCode = "";
+
+function setGenerating(on) {
+  const btn      = document.getElementById("btn-generate");
+  const icon     = document.getElementById("generate-icon");
+  const spinner  = document.getElementById("generate-spinner");
+  const label    = document.getElementById("generate-label");
+  btn.disabled   = on;
+  icon.classList.toggle("hidden", on);
+  spinner.classList.toggle("hidden", !on);
+  label.textContent = on ? "Generating…" : "Generate";
+}
+
+function closeOutputPanel() {
+  document.getElementById("generate-output-panel").classList.add("hidden");
+}
+
+function copyGeneratedCode() {
+  if (!currentGeneratedCode) return;
+  navigator.clipboard.writeText(currentGeneratedCode).then(() => {
+    const btn = document.getElementById("btn-copy");
+    btn.textContent = "Copied!";
+    setTimeout(() => { btn.innerHTML = `<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg> Copy`; }, 2000);
+  });
+}
+
+async function handleGenerate() {
+  const textarea = document.getElementById("ai-prompt");
+  const prompt   = textarea?.value?.trim();
+  if (!prompt) {
+    textarea?.focus();
+    return;
+  }
+
+  currentGeneratedCode = "";
+  setGenerating(true);
+
+  const panel     = document.getElementById("generate-output-panel");
+  const pre       = document.getElementById("generate-output-pre");
+  const statusDot = document.getElementById("output-status-dot");
+  const statusLbl = document.getElementById("output-status-label");
+  const saved     = document.getElementById("output-project-saved");
+  const copyBtn   = document.getElementById("btn-copy");
+
+  pre.textContent = "";
+  saved.classList.add("hidden");
+  copyBtn.classList.add("hidden");
+  statusDot.className = "w-2 h-2 rounded-full bg-emerald-400 animate-pulse-dot";
+  statusLbl.textContent = "Generating…";
+  panel.classList.remove("hidden");
+
+  panel.scrollIntoView({ behavior: "smooth", block: "start" });
+
+  try {
+    const res = await fetch("/api/generate", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${getToken()}`,
+      },
+      body: JSON.stringify({ prompt }),
+    });
+
+    if (!res.ok || !res.body) {
+      const data = await res.json().catch(() => ({}));
+      pre.textContent = `Error: ${data.error || "Generation failed. Please try again."}`;
+      statusDot.className = "w-2 h-2 rounded-full bg-red-400";
+      statusLbl.textContent = "Failed";
+      setGenerating(false);
+      return;
+    }
+
+    const reader  = res.body.getReader();
+    const decoder = new TextDecoder();
+    let   buffer  = "";
+
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split("\n");
+      buffer = lines.pop() || "";
+
+      for (const line of lines) {
+        if (!line.startsWith("data: ")) continue;
+        try {
+          const evt = JSON.parse(line.slice(6));
+
+          if (evt.content) {
+            currentGeneratedCode += evt.content;
+            pre.textContent = currentGeneratedCode;
+            pre.parentElement.scrollTop = pre.parentElement.scrollHeight;
+          }
+
+          if (evt.done) {
+            statusDot.className = "w-2 h-2 rounded-full bg-blue-400";
+            statusLbl.textContent = "Complete";
+            copyBtn.classList.remove("hidden");
+            saved.classList.remove("hidden");
+            loadHomeProjects();
+          }
+
+          if (evt.error) {
+            statusDot.className = "w-2 h-2 rounded-full bg-red-400";
+            statusLbl.textContent = "Error";
+            if (!currentGeneratedCode) pre.textContent = evt.error;
+          }
+        } catch { /* ignore parse errors */ }
+      }
+    }
+  } catch (err) {
+    pre.textContent = "Network error — please try again.";
+    statusDot.className = "w-2 h-2 rounded-full bg-red-400";
+    statusLbl.textContent = "Failed";
+  } finally {
+    setGenerating(false);
+  }
+}
+
 // ─── Auth Handlers ────────────────────────────────────────────────────────────
 
 async function handleLogin(event) {

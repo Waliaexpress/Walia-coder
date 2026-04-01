@@ -5,6 +5,7 @@ import usersRouter from "./users.js";
 import adminRouter from "./admin.js";
 import projectsRouter from "./projects.js";
 import subscriptionsRouter from "./subscriptions.js";
+import generateRouter from "./generate.js";
 
 const router: IRouter = Router();
 
@@ -14,5 +15,6 @@ router.use(usersRouter);
 router.use(adminRouter);
 router.use(projectsRouter);
 router.use(subscriptionsRouter);
+router.use(generateRouter);
 
 export default router;
