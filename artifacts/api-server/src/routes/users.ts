@@ -22,7 +22,13 @@ router.get("/users/me", requireAuth, async (req, res) => {
     return;
   }
 
-  res.status(200).json({ user });
+  const normalizedRole = user.role === "employee" ? "user" : user.role;
+  res.status(200).json({
+    id: user.id,
+    email: user.email,
+    role: normalizedRole,
+    createdAt: user.createdAt.toISOString(),
+  });
 });
 
 export default router;

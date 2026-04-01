@@ -43,9 +43,18 @@ export async function register(req: Request, res: Response): Promise<void> {
     });
 
   const token = signToken({ sub: user.id, email: user.email, role: user.role });
+  const normalizedRole = user.role === "employee" ? "user" : user.role;
 
   logger.info({ email, role: user.role }, "User registered");
-  res.status(201).json({ token, user: { id: user.id, email: user.email, role: user.role } });
+  res.status(201).json({
+    token,
+    user: {
+      id: user.id,
+      email: user.email,
+      role: normalizedRole,
+      createdAt: new Date().toISOString(),
+    },
+  });
 }
 
 export async function login(req: Request, res: Response): Promise<void> {
@@ -74,7 +83,16 @@ export async function login(req: Request, res: Response): Promise<void> {
   }
 
   const token = signToken({ sub: user.id, email: user.email, role: user.role });
+  const normalizedRole = user.role === "employee" ? "user" : user.role;
 
   logger.info({ email, role: user.role }, "User logged in");
-  res.status(200).json({ token, user: { id: user.id, email: user.email, role: user.role } });
+  res.status(200).json({
+    token,
+    user: {
+      id: user.id,
+      email: user.email,
+      role: normalizedRole,
+      createdAt: user.createdAt.toISOString(),
+    },
+  });
 }

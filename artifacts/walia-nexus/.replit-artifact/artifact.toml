@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "Walia Nexus"
+version = "1.0.0"
+id = "artifacts/walia-nexus"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 19609
+
+[services.development]
+run = "pnpm --filter @workspace/walia-nexus run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/walia-nexus", "run", "build" ]
+publicDir = "artifacts/walia-nexus/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "19609"
+BASE_PATH = "/"

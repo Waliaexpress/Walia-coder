@@ -65,7 +65,8 @@ All stubs use CJS `module.exports = Proxy(...)` so any named import is satisfied
 ```text
 artifacts-monorepo/
 ├── artifacts/              # Deployable applications
-│   └── api-server/         # Express API server
+│   ├── api-server/         # Express API server (JWT + RBAC)
+│   └── walia-nexus/        # React/Vite SaaS frontend (marketing + dashboard)
 ├── lib/                    # Shared libraries
 │   ├── api-spec/           # OpenAPI spec + Orval codegen config
 │   ├── api-client-react/   # Generated React Query hooks
