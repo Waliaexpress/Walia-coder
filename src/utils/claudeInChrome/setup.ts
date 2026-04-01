@@ -51,10 +51,10 @@ export function shouldEnableClaudeInChrome(chromeFlag?: boolean): boolean {
   }
 
   // Check environment variables
-  if (isEnvTruthy(process.env.CLAUDE_CODE_ENABLE_CFC)) {
+  if (isEnvTruthy(process.env.WALIA_CODER_ENABLE_CFC)) {
     return true
   }
-  if (isEnvDefinedFalsy(process.env.CLAUDE_CODE_ENABLE_CFC)) {
+  if (isEnvDefinedFalsy(process.env.WALIA_CODER_ENABLE_CFC)) {
     return false
   }
 
@@ -181,7 +181,7 @@ function getNativeMessagingHostsDirs(): string[] {
     // Windows uses a single location with registry entries pointing to it
     const home = homedir()
     const appData = process.env.APPDATA || join(home, 'AppData', 'Local')
-    return [join(appData, 'Claude Code', 'ChromeNativeHost')]
+    return [join(appData, 'Walia Coder', 'ChromeNativeHost')]
   }
 
   // macOS and Linux: return all browser native messaging directories
