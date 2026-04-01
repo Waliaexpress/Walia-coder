@@ -173,6 +173,58 @@ function handleLogout() {
   document.getElementById("login-password").value = "";
 }
 
+// ─── Protected API Calls ──────────────────────────────────────────────────────
+
+async function authFetch(url) {
+  const token = getToken();
+  const res = await fetch(url, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return res;
+}
+
+function renderApiResponse(panelId, data, isError) {
+  const panel = document.getElementById(panelId);
+  panel.classList.remove("hidden");
+  const pre = panel.querySelector("pre");
+  pre.textContent = JSON.stringify(data, null, 2);
+  pre.className = isError
+    ? "text-xs font-mono text-red-400 break-all whitespace-pre-wrap"
+    : "text-xs font-mono text-emerald-400 break-all whitespace-pre-wrap";
+}
+
+async function fetchProfile() {
+  const btn = document.getElementById("btn-profile");
+  btn.disabled = true;
+  btn.textContent = "Fetching…";
+  try {
+    const res = await authFetch("/api/users/me");
+    const data = await res.json();
+    renderApiResponse("profile-response", data, !res.ok);
+  } catch (err) {
+    renderApiResponse("profile-response", { error: "Network error" }, true);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "Fetch My Profile";
+  }
+}
+
+async function fetchAdminPanel() {
+  const btn = document.getElementById("btn-admin");
+  btn.disabled = true;
+  btn.textContent = "Fetching…";
+  try {
+    const res = await authFetch("/api/admin/system");
+    const data = await res.json();
+    renderApiResponse("admin-response", data, !res.ok);
+  } catch (err) {
+    renderApiResponse("admin-response", { error: "Network error" }, true);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "Access Admin Panel";
+  }
+}
+
 // ─── Boot ─────────────────────────────────────────────────────────────────────
 
 (function init() {
