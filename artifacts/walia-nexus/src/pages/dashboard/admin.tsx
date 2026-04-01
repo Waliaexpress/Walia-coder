@@ -6,29 +6,18 @@ import { getAdminListUsersQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { ShieldAlert, Trash2, Loader2, UserMinus } from "lucide-react";
-import {
-  Table,
-  Body,
-  Cell,
-  Head,
-  Header,
-  Row,
-  Table as TableRoot
-} from "@/components/ui/table"; // Assuming standard table components if they exist, else we use raw HTML tables stylized
-// The workspace has shadcn table components based on the file list. Let's use standard table elements with Tailwind classes since the exact shadcn table exports might differ slightly.
+import { ShieldAlert, Loader2, UserMinus } from "lucide-react";
 
 export default function Admin() {
   const { user } = useAuth();
-  
-  if (user?.role !== "admin") {
-    return <Redirect to="/dashboard" />;
-  }
-
   const { data: users, isLoading } = useAdminListUsers();
   const deleteUser = useAdminDeleteUser();
   const queryClient = useQueryClient();
   const { toast } = useToast();
+
+  if (user?.role !== "admin") {
+    return <Redirect to="/dashboard" />;
+  }
 
   const handleRevoke = (id: string, email: string) => {
     if (id === user?.id) {
