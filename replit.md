@@ -4,6 +4,50 @@
 
 pnpm workspace monorepo using TypeScript. Each package manages its own dependencies.
 
+---
+
+## Walia Coder CLI
+
+Rebranded AI coding assistant built from the claude-code source archive.
+
+### Key facts
+- **Command:** `walia` (also `walia-coder`)
+- **Binary:** `walia-coder/dist/cli.js` (28 MB Bun bundle)
+- **Symlink:** `~/.local/bin/walia` → `walia-coder/dist/cli.js`
+- **Config dir:** `~/.walia-coder/`
+- **API key env var:** `WALIA_API_KEY` (mapped internally to `ANTHROPIC_API_KEY` at startup)
+- **Version:** `1.0.0 (Walia Coder)`
+
+### Build system
+Located in `walia-coder/`. Uses Bun 1.3.6.
+
+```bash
+cd walia-coder && bun install && bun run build.ts
+```
+
+The `build.ts` script uses four custom Bun plugins:
+1. `bun-bundle-stub` — stubs `bun:bundle` so `feature()` returns `false` (disables internal Anthropic gates)
+2. `src-alias` — resolves bare `src/*` imports through the `walia-coder/src` symlink
+3. `react-compiler-alias` — maps `react/compiler-runtime` to `react-compiler-runtime`
+4. `js-resolver` + `js-loader` — handles `.js` → `.ts` resolution for both dynamic `require()` and static imports
+
+### Private package stubs (graceful no-ops)
+Five Anthropic-internal packages are stubbed in `walia-coder/stubs/`:
+- `@ant/computer-use-mcp` — computer use MCP server (disabled)
+- `@ant/computer-use-swift` — Swift screenshot/input native module (disabled)
+- `@ant/computer-use-input` — Rust keyboard/mouse native module (disabled)
+- `@ant/claude-for-chrome-mcp` — Chrome browser integration (disabled)
+- `@anthropic-ai/mcpb` — MCPB manifest handler (disabled)
+
+All stubs use CJS `module.exports = Proxy(...)` so any named import is satisfied without crashing.
+
+### Source layout
+- `src/` (workspace root) — extracted claude-code TypeScript source (2203 files)
+- `walia-coder/src` — symlink to `../src` (so Bun's node_modules resolver finds `walia-coder/node_modules`)
+- `src/node_modules` — symlink to `walia-coder/node_modules` (for resolver walk from real source paths)
+
+---
+
 ## Stack
 
 - **Monorepo tool**: pnpm workspaces

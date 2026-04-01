@@ -1,0 +1,9 @@
+{
+  "name": "@ant/computer-use-swift",
+  "version": "0.0.1",
+  "description": "Stub: Swift computer-use native module (disabled in Walia Coder)",
+  "main": "./index.js",
+  "exports": {
+    ".": "./index.js"
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "name": "@ant/computer-use-mcp",
+  "version": "0.0.1",
+  "description": "Stub: computer-use MCP server (disabled in Walia Coder)",
+  "main": "./index.js",
+  "exports": {
+    ".": "./index.js",
+    "./sentinelApps": "./sentinelApps.js",
+    "./types": "./types.js"
+  }
+}

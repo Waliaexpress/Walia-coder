@@ -1,0 +1,13 @@
+# Bun configuration for Walia Coder build
+
+[install]
+# Allow file: protocol stubs for private package shims
+optional = true
+
+[install.scopes]
+# Prevent bun from trying to resolve @ant/* or @anthropic-ai/mcpb from npm
+# (they are file: stubs in package.json)
+
+[build]
+# Compilation target
+target = "bun"
