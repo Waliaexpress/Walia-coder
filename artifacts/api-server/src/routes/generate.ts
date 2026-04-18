@@ -57,18 +57,32 @@ router.post("/generate", requireAuth, async (req, res) => {
   const userId = req.user!.sub;
   const { title, stack } = inferProjectMeta(prompt);
 
+  // Insert project FIRST so the UI gets instant feedback
+  const [project] = await db
+    .insert(projectsTable)
+    .values({
+      title,
+      stack,
+      status: "private",
+      userId,
+    })
+    .returning();
+
   res.setHeader("Content-Type", "text/event-stream");
   res.setHeader("Cache-Control", "no-cache");
   res.setHeader("Connection", "keep-alive");
   res.setHeader("X-Accel-Buffering", "no");
   res.flushHeaders();
 
+  // Emit the new project immediately - React client can resolve here
+  res.write(`data: ${JSON.stringify({ project })}\n\n`);
+
   let fullContent = "";
 
   try {
     const stream = await openai.chat.completions.create({
       model: "gpt-5.2",
-      max_completion_tokens: 8192,
+      max_completion_tokens: 3000,
       messages: [
         {
           role: "system",
