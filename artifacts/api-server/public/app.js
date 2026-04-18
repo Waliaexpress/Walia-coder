@@ -147,10 +147,16 @@ function buildProjectCard(p, idx) {
   const safeTitle = escapeHtml(p.title);
   const safeStack = escapeHtml(p.stack || "");
 
-  return `<div class="project-card" id="card-${p.id}">
-    <div class="h-24 bg-gradient-to-br ${gradient} flex items-end justify-between px-4 pb-3 border-b border-gray-800/60">
+  return `<div class="project-card cursor-pointer hover:ring-1 hover:ring-blue-500/40 transition-all" id="card-${p.id}" onclick="openPreviewModal('${p.id}', '${safeTitle.replace(/'/g, "\\'")}')">
+    <div class="h-24 bg-gradient-to-br ${gradient} flex items-end justify-between px-4 pb-3 border-b border-gray-800/60 relative group">
       <span class="px-2 py-0.5 rounded-full text-xs font-semibold ${statusClass}">${p.status}</span>
-      <div class="flex items-center gap-1.5">
+      <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+        <span class="px-3 py-1 rounded-full bg-blue-500/20 border border-blue-500/40 text-blue-300 text-xs font-semibold flex items-center gap-1.5">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+          Launch Preview
+        </span>
+      </div>
+      <div class="flex items-center gap-1.5 relative z-10">
         <button
           class="card-menu-btn card-menu-edit"
           title="Edit project"
@@ -173,6 +179,69 @@ function buildProjectCard(p, idx) {
       <p class="text-xs text-gray-600">${timeAgo(p.createdAt)}</p>
     </div>
   </div>`;
+}
+
+/* ================== LIVE PREVIEW MODAL ================== */
+function openPreviewModal(projectId, title) {
+  // Remove any existing modal first
+  const existing = document.getElementById("preview-modal");
+  if (existing) existing.remove();
+
+  const modal = document.createElement("div");
+  modal.id = "preview-modal";
+  modal.className = "fixed inset-0 z-[100] bg-black/85 backdrop-blur-sm flex items-center justify-center p-4 animate-fadeIn";
+  modal.style.animation = "fadeIn 0.2s ease-out";
+  modal.innerHTML = `
+    <div class="w-full max-w-7xl h-[90vh] flex flex-col rounded-xl overflow-hidden border border-gray-800 bg-[#0e1117] shadow-2xl">
+      <div class="flex items-center gap-3 px-4 py-2.5 bg-[#1c2333] border-b border-gray-800">
+        <div class="flex items-center gap-1.5">
+          <button onclick="closePreviewModal()" class="w-3 h-3 rounded-full bg-red-500 hover:scale-110 transition-transform" title="Close"></button>
+          <div class="w-3 h-3 rounded-full bg-amber-500/40"></div>
+          <div class="w-3 h-3 rounded-full bg-green-500/40"></div>
+        </div>
+        <div class="flex-1 flex items-center gap-2 bg-[#0e1117] rounded-md px-3 py-1 border border-gray-800">
+          <div class="w-2 h-2 rounded-full bg-green-400/80"></div>
+          <span class="text-[11px] font-mono text-gray-500 truncate">walia://preview/${projectId.split("-")[0]} — ${title}</span>
+        </div>
+        <button onclick="document.getElementById('preview-iframe').src = document.getElementById('preview-iframe').src" class="text-gray-500 hover:text-white text-xs px-2 py-1 rounded hover:bg-gray-800 transition-colors" title="Reload">
+          <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+        </button>
+        <a href="/api/projects/${projectId}/preview" target="_blank" rel="noopener" class="text-gray-500 hover:text-white text-xs px-2 py-1 rounded hover:bg-gray-800 transition-colors" title="Open in new tab">
+          <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+        </a>
+        <button onclick="closePreviewModal()" class="text-gray-500 hover:text-red-400 text-xs px-2 py-1 rounded hover:bg-red-500/10 transition-colors">
+          <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <iframe
+        id="preview-iframe"
+        src="/api/projects/${projectId}/preview"
+        class="flex-1 w-full bg-white border-0"
+        sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
+        title="Live Preview: ${title}"></iframe>
+    </div>`;
+
+  // Click backdrop to close
+  modal.addEventListener("click", (e) => {
+    if (e.target === modal) closePreviewModal();
+  });
+
+  // ESC to close
+  document.addEventListener("keydown", _previewEscHandler);
+
+  document.body.appendChild(modal);
+  document.body.style.overflow = "hidden";
+}
+
+function _previewEscHandler(e) {
+  if (e.key === "Escape") closePreviewModal();
+}
+
+function closePreviewModal() {
+  const modal = document.getElementById("preview-modal");
+  if (modal) modal.remove();
+  document.removeEventListener("keydown", _previewEscHandler);
+  document.body.style.overflow = "";
 }
 
 function buildNewProjectCard() {

@@ -5,7 +5,7 @@ import { eq } from "drizzle-orm";
 const router: IRouter = Router();
 
 // Public — no auth required so iframes can embed without Authorization headers
-router.get("/api/projects/:id/preview", async (req, res) => {
+router.get("/projects/:id/preview", async (req, res) => {
   const { id } = req.params;
 
   const [project] = await db
