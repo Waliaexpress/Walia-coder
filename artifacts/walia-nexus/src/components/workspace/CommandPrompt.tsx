@@ -3,14 +3,16 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Loader2,
   Zap,
-  Plus,
+  Paperclip,
   Upload,
+  HardDrive,
+  Image as ImageIcon,
+  Code2,
+  Network,
   Figma,
-  Box,
   Sparkles,
   ChevronRight,
   ChevronDown,
-  SquareDashed,
   Check,
 } from "lucide-react";
 
@@ -36,7 +38,7 @@ const POWER_LEVELS = [
 export function CommandPrompt({ username, onGenerate, isGenerating }: CommandPromptProps) {
   const [prompt, setPrompt] = useState("");
   const [placeholderIdx] = useState(() => Math.floor(Math.random() * PLACEHOLDER_EXAMPLES.length));
-  const [plusOpen, setPlusOpen] = useState(false);
+  const [contextOpen, setContextOpen] = useState(false);
   const [powerOpen, setPowerOpen] = useState(false);
   const [powerLevel, setPowerLevel] = useState("power");
   const [planMode, setPlanMode] = useState(false);
@@ -46,14 +48,13 @@ export function CommandPrompt({ username, onGenerate, isGenerating }: CommandPro
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const plusMenuRef = useRef<HTMLDivElement>(null);
+  const contextMenuRef = useRef<HTMLDivElement>(null);
   const powerMenuRef = useRef<HTMLDivElement>(null);
 
-  // Click-outside handler
   useEffect(() => {
     const handler = (e: MouseEvent) => {
-      if (plusOpen && plusMenuRef.current && !plusMenuRef.current.contains(e.target as Node)) {
-        setPlusOpen(false);
+      if (contextOpen && contextMenuRef.current && !contextMenuRef.current.contains(e.target as Node)) {
+        setContextOpen(false);
       }
       if (powerOpen && powerMenuRef.current && !powerMenuRef.current.contains(e.target as Node)) {
         setPowerOpen(false);
@@ -61,13 +62,13 @@ export function CommandPrompt({ username, onGenerate, isGenerating }: CommandPro
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
-  }, [plusOpen, powerOpen]);
+  }, [contextOpen, powerOpen]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!prompt.trim() || isGenerating) return;
     const planPrefix = planMode ? "[PLAN MODE — outline architecture before writing code]\n\n" : "";
-    const attachContext = attachments.length > 0 ? `\n\nAttached files: ${attachments.join(", ")}` : "";
+    const attachContext = attachments.length > 0 ? `\n\nAttached context: ${attachments.join(", ")}` : "";
     onGenerate(planPrefix + prompt.trim() + attachContext);
     setPrompt("");
     setAttachments([]);
@@ -81,40 +82,24 @@ export function CommandPrompt({ username, onGenerate, isGenerating }: CommandPro
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files ?? []);
-    if (files.length > 0) {
-      setAttachments((prev) => [...prev, ...files.map((f) => f.name)]);
-    }
+    if (files.length > 0) setAttachments((prev) => [...prev, ...files.map((f) => f.name)]);
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
+  const closeAndAttach = (label: string) => {
+    setContextOpen(false);
+    setAttachments((p) => [...p, label]);
+  };
+
   const triggerUpload = () => {
-    setPlusOpen(false);
+    setContextOpen(false);
     fileInputRef.current?.click();
   };
 
-  const triggerFigma = () => {
-    setPlusOpen(false);
-    setFigmaPrompt(true);
-  };
-
   const submitFigma = () => {
-    if (figmaUrl.trim()) {
-      setAttachments((prev) => [...prev, `Figma: ${figmaUrl.trim()}`]);
-    }
+    if (figmaUrl.trim()) setAttachments((prev) => [...prev, `Figma: ${figmaUrl.trim()}`]);
     setFigmaUrl("");
     setFigmaPrompt(false);
-  };
-
-  const triggerCreate = () => {
-    setPlusOpen(false);
-    setPrompt((p) => (p ? p + "\n\n" : "") + "Create something new: ");
-    textareaRef.current?.focus();
-  };
-
-  const triggerSkill = () => {
-    setPlusOpen(false);
-    setPrompt((p) => (p ? p + "\n\n" : "") + "Use a skill: ");
-    textareaRef.current?.focus();
   };
 
   const displayName = username.split("@")[0] ?? username;
@@ -162,7 +147,6 @@ export function CommandPrompt({ username, onGenerate, isGenerating }: CommandPro
         transition={{ duration: 0.5, delay: 0.1 }}
         className="relative"
       >
-        {/* Hidden file input */}
         <input
           ref={fileInputRef}
           type="file"
@@ -173,27 +157,15 @@ export function CommandPrompt({ username, onGenerate, isGenerating }: CommandPro
         />
 
         <div
-          className={`relative rounded-2xl border transition-all duration-300 ${
+          className={`relative rounded-2xl border transition-all duration-300 px-4 pt-4 ${
             isGenerating
               ? "border-amber-500/30 shadow-[0_0_32px_rgba(245,158,11,0.12)]"
               : "border-white/[0.08] hover:border-white/20 focus-within:border-blue-500/40 focus-within:shadow-[0_0_32px_rgba(59,130,246,0.1)]"
           } bg-[#1c2333]`}
         >
-          <textarea
-            ref={textareaRef}
-            value={prompt}
-            onChange={(e) => setPrompt(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder={PLACEHOLDER_EXAMPLES[placeholderIdx]}
-            rows={3}
-            disabled={isGenerating}
-            className="w-full bg-transparent text-white placeholder:text-white/20 resize-none px-6 pt-5 pb-20 text-sm font-mono leading-relaxed focus:outline-none disabled:opacity-50"
-            data-testid="input-prompt"
-          />
-
           {/* Attachment chips */}
           {attachments.length > 0 && (
-            <div className="absolute top-2 right-3 flex flex-wrap gap-1.5 max-w-[60%] justify-end">
+            <div className="flex flex-wrap gap-1.5 mb-2">
               {attachments.map((name, i) => (
                 <motion.span
                   key={`${name}-${i}`}
@@ -201,7 +173,7 @@ export function CommandPrompt({ username, onGenerate, isGenerating }: CommandPro
                   animate={{ opacity: 1, scale: 1 }}
                   className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-blue-500/15 border border-blue-500/30 text-blue-300 text-[10px] font-mono"
                 >
-                  {name.length > 24 ? name.slice(0, 22) + "…" : name}
+                  {name.length > 32 ? name.slice(0, 30) + "…" : name}
                   <button
                     type="button"
                     onClick={() => setAttachments((p) => p.filter((_, j) => j !== i))}
@@ -214,84 +186,33 @@ export function CommandPrompt({ username, onGenerate, isGenerating }: CommandPro
             </div>
           )}
 
-          {/* Bottom bar */}
-          <div className="absolute bottom-0 left-0 right-0 flex items-center justify-between px-3 py-2.5 border-t border-white/[0.05]">
-            {/* LEFT: + button + dashed-box target */}
-            <div className="flex items-center gap-1">
-              <div className="relative" ref={plusMenuRef}>
-                <button
-                  type="button"
-                  onClick={() => setPlusOpen((v) => !v)}
-                  className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/5 transition-colors"
-                  aria-label="Add context"
-                  data-testid="button-plus-menu"
-                >
-                  <Plus className="w-4 h-4" />
-                </button>
+          <textarea
+            ref={textareaRef}
+            value={prompt}
+            onChange={(e) => setPrompt(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder={PLACEHOLDER_EXAMPLES[placeholderIdx]}
+            rows={3}
+            disabled={isGenerating}
+            className="w-full bg-transparent text-white placeholder:text-white/20 resize-none text-sm font-mono leading-relaxed focus:outline-none disabled:opacity-50"
+            data-testid="input-prompt"
+          />
 
-                {/* Popover menu */}
-                <AnimatePresence>
-                  {plusOpen && (
-                    <motion.div
-                      initial={{ opacity: 0, scale: 0.95, y: 6 }}
-                      animate={{ opacity: 1, scale: 1, y: 0 }}
-                      exit={{ opacity: 0, scale: 0.95, y: 6 }}
-                      transition={{ duration: 0.15, ease: "easeOut" }}
-                      className="absolute bottom-full left-0 mb-2 bg-[#1e1e1e] border border-gray-700 rounded-lg shadow-2xl py-1 w-64 z-50"
-                      data-testid="menu-plus"
-                    >
-                      <MenuItem
-                        icon={<Upload className="w-4 h-4" />}
-                        label="Upload a file"
-                        onClick={triggerUpload}
-                        testId="menu-upload-file"
-                      />
-                      <MenuItem
-                        icon={<Figma className="w-4 h-4 text-pink-400" />}
-                        label="Attach a Figma design"
-                        onClick={triggerFigma}
-                        testId="menu-attach-figma"
-                      />
-                      <MenuItem
-                        icon={<Box className="w-4 h-4" />}
-                        label="Create something new"
-                        onClick={triggerCreate}
-                        testId="menu-create-new"
-                      />
-                      <MenuItem
-                        icon={<Sparkles className="w-4 h-4 text-amber-400" />}
-                        label="Use a skill"
-                        chevron
-                        onClick={triggerSkill}
-                        testId="menu-use-skill"
-                      />
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-
-              <button
-                type="button"
-                className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-500 hover:text-white hover:bg-white/5 transition-colors"
-                aria-label="Selection target"
-                title="Targeted selection"
-              >
-                <SquareDashed className="w-4 h-4" />
-              </button>
-
-              <span className="ml-2 text-[10px] text-white/25 font-mono hidden sm:inline">
-                ⌘ + Enter
-              </span>
+          {/* Action Hub bar */}
+          <div className="flex items-center justify-between w-full pt-3 mt-2 border-t border-gray-800">
+            {/* LEFT: status / hint */}
+            <div className="flex items-center gap-2 text-[10px] text-white/25 font-mono">
+              <span className="hidden sm:inline">⌘ + Enter to send</span>
             </div>
 
-            {/* RIGHT: Power + Plan + Submit */}
-            <div className="flex items-center gap-2">
+            {/* RIGHT: Power · Plan · Context · Generate */}
+            <div className="flex items-center gap-2 relative">
               {/* Power dropdown */}
               <div className="relative" ref={powerMenuRef}>
                 <button
                   type="button"
                   onClick={() => setPowerOpen((v) => !v)}
-                  className="flex items-center gap-1 px-2.5 py-1.5 rounded-md text-xs font-mono text-gray-300 hover:text-white hover:bg-white/5 transition-colors"
+                  className="flex items-center gap-1 px-2.5 py-1.5 rounded-md text-xs font-mono text-gray-300 hover:text-white hover:bg-gray-800 transition-colors"
                   data-testid="button-power"
                 >
                   {currentPower.label}
@@ -304,7 +225,7 @@ export function CommandPrompt({ username, onGenerate, isGenerating }: CommandPro
                       animate={{ opacity: 1, scale: 1, y: 0 }}
                       exit={{ opacity: 0, scale: 0.95, y: 6 }}
                       transition={{ duration: 0.15 }}
-                      className="absolute bottom-full right-0 mb-2 bg-[#1e1e1e] border border-gray-700 rounded-lg shadow-2xl py-1 w-44 z-50"
+                      className="absolute bottom-full right-0 mb-2 bg-[#2b2d31] border border-gray-700/50 rounded-xl shadow-2xl py-2 w-44 z-50"
                     >
                       {POWER_LEVELS.map((lvl) => (
                         <button
@@ -314,10 +235,10 @@ export function CommandPrompt({ username, onGenerate, isGenerating }: CommandPro
                             setPowerLevel(lvl.id);
                             setPowerOpen(false);
                           }}
-                          className="w-full flex items-center justify-between px-3 py-2 hover:bg-blue-600/20 hover:text-white text-gray-300 text-xs transition-colors"
+                          className="w-full flex items-center justify-between px-4 py-2 hover:bg-gray-700/50 text-gray-200 text-[14px] transition-colors"
                         >
                           <div className="flex flex-col items-start">
-                            <span className="font-mono">{lvl.label}</span>
+                            <span className="font-mono text-xs">{lvl.label}</span>
                             <span className="text-[10px] text-gray-500">{lvl.desc}</span>
                           </div>
                           {powerLevel === lvl.id && <Check className="w-3 h-3 text-blue-400" />}
@@ -335,7 +256,7 @@ export function CommandPrompt({ username, onGenerate, isGenerating }: CommandPro
                 className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-mono transition-colors ${
                   planMode
                     ? "bg-blue-500/20 text-blue-300 border border-blue-500/40"
-                    : "text-gray-400 hover:text-white hover:bg-white/5 border border-transparent"
+                    : "text-gray-400 hover:text-white hover:bg-gray-800 border border-transparent"
                 }`}
                 data-testid="button-plan"
               >
@@ -349,22 +270,99 @@ export function CommandPrompt({ username, onGenerate, isGenerating }: CommandPro
                 Plan
               </button>
 
+              {/* Context Trigger (paperclip) — sits next to Generate */}
+              <div className="relative" ref={contextMenuRef}>
+                <button
+                  type="button"
+                  onClick={() => setContextOpen((v) => !v)}
+                  className="text-gray-400 hover:text-white p-2 rounded-md hover:bg-gray-800 transition-colors"
+                  aria-label="Add context"
+                  data-testid="button-context"
+                >
+                  <Paperclip className="w-4 h-4" />
+                </button>
+
+                {/* Master Context Menu */}
+                <AnimatePresence>
+                  {contextOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.95, y: 6 }}
+                      animate={{ opacity: 1, scale: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.95, y: 6 }}
+                      transition={{ duration: 0.15, ease: "easeOut" }}
+                      className="absolute bottom-full right-0 mb-2 w-56 z-50 bg-[#2b2d31] border border-gray-700/50 rounded-xl shadow-2xl py-2"
+                      data-testid="menu-context"
+                    >
+                      <CtxItem
+                        icon={<Paperclip className="w-4 h-4" />}
+                        label="Upload files"
+                        onClick={triggerUpload}
+                        testId="menu-upload-files"
+                      />
+                      <CtxItem
+                        icon={<HardDrive className="w-4 h-4 text-blue-400" />}
+                        label="Add from Drive"
+                        onClick={() => closeAndAttach("Drive")}
+                        testId="menu-drive"
+                      />
+                      <CtxItem
+                        icon={<ImageIcon className="w-4 h-4 text-emerald-400" />}
+                        label="Photos"
+                        onClick={() => closeAndAttach("Photos")}
+                        testId="menu-photos"
+                      />
+                      <CtxItem
+                        icon={<Code2 className="w-4 h-4 text-purple-400" />}
+                        label="Import code"
+                        onClick={() => closeAndAttach("Import code")}
+                        testId="menu-import-code"
+                      />
+                      <CtxItem
+                        icon={<Network className="w-4 h-4 text-cyan-400" />}
+                        label="NotebookLM"
+                        onClick={() => closeAndAttach("NotebookLM")}
+                        testId="menu-notebooklm"
+                      />
+                      <CtxItem
+                        icon={<Figma className="w-4 h-4 text-pink-400" />}
+                        label="Attach a Figma design"
+                        onClick={() => {
+                          setContextOpen(false);
+                          setFigmaPrompt(true);
+                        }}
+                        testId="menu-figma"
+                      />
+                      <CtxItem
+                        icon={<Sparkles className="w-4 h-4 text-amber-400" />}
+                        label="Use a skill"
+                        chevron
+                        onClick={() => closeAndAttach("Skill")}
+                        testId="menu-skill"
+                      />
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+
+              {/* Generate button */}
               <motion.button
                 type="submit"
                 disabled={!prompt.trim() || isGenerating}
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.97 }}
-                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-amber-500 text-[#0e1117] font-black text-xs uppercase tracking-widest disabled:opacity-40 disabled:cursor-not-allowed hover:bg-amber-400 shadow-[0_0_20px_rgba(245,158,11,0.35)] hover:shadow-[0_0_28px_rgba(245,158,11,0.55)] transition-all"
+                className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-md font-medium text-xs uppercase tracking-wider flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed transition-colors shadow-[0_0_18px_rgba(59,130,246,0.25)]"
                 data-testid="button-generate"
               >
                 {isGenerating ? (
                   <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Generating...</>
                 ) : (
-                  <><Zap className="w-3.5 h-3.5" /> Initiate Build</>
+                  <><Zap className="w-3.5 h-3.5" /> Generate</>
                 )}
               </motion.button>
             </div>
           </div>
+
+          <div className="h-3" />
         </div>
 
         {/* Figma URL prompt modal */}
@@ -419,7 +417,6 @@ export function CommandPrompt({ username, onGenerate, isGenerating }: CommandPro
           )}
         </AnimatePresence>
 
-        {/* Generating overlay effect */}
         {isGenerating && (
           <motion.div
             className="absolute inset-0 rounded-2xl pointer-events-none"
@@ -433,7 +430,7 @@ export function CommandPrompt({ username, onGenerate, isGenerating }: CommandPro
   );
 }
 
-interface MenuItemProps {
+interface CtxItemProps {
   icon: React.ReactNode;
   label: string;
   chevron?: boolean;
@@ -441,15 +438,15 @@ interface MenuItemProps {
   testId?: string;
 }
 
-function MenuItem({ icon, label, chevron, onClick, testId }: MenuItemProps) {
+function CtxItem({ icon, label, chevron, onClick, testId }: CtxItemProps) {
   return (
     <button
       type="button"
       onClick={onClick}
       data-testid={testId}
-      className="w-full flex items-center gap-3 px-3 py-2 hover:bg-blue-600/20 hover:text-white text-gray-300 cursor-pointer text-sm transition-colors"
+      className="w-full flex items-center gap-3 px-4 py-2 hover:bg-gray-700/50 text-gray-200 cursor-pointer text-[14px] transition-colors"
     >
-      <span className="text-gray-400 group-hover:text-white">{icon}</span>
+      <span className="shrink-0">{icon}</span>
       <span className="flex-1 text-left">{label}</span>
       {chevron && <ChevronRight className="w-3.5 h-3.5 text-gray-500" />}
     </button>
