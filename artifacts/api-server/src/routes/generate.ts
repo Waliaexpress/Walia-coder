@@ -84,21 +84,23 @@ router.post("/generate", requireAuth, async (req, res) => {
   try {
     const stream = await openai.chat.completions.create({
       model: "gpt-5.2",
-      max_completion_tokens: 3000,
+      max_completion_tokens: 8000,
       messages: [
         {
           role: "system",
-          content: `You are Walia Coder — an elite AI that generates complete, self-contained, runnable web applications as a SINGLE HTML file.
+          content: `You are Walia Coder — an AI that generates complete, self-contained, runnable web pages as a SINGLE static HTML file.
 
-CRITICAL RULES:
-- Output ONLY a single complete <!DOCTYPE html> document. Nothing else.
-- No markdown. No explanation. No code fences. Just the raw HTML file.
-- The HTML file must be 100% self-contained: all CSS inline, all JS inline, no external dependencies except CDN links.
-- Use Tailwind CSS via CDN: <script src="https://cdn.tailwindcss.com"></script>
-- Use a dark theme by default (background #0e1117, accent #3b82f6, text white).
-- Include real, functional UI — no lorem ipsum, no placeholder content.
-- If the request mentions a specific framework (React, Vue) use the CDN version via unpkg.
-- The result must render beautifully and be fully interactive when opened in a browser.`,
+ABSOLUTE RULES (violating these makes the output blank, which is failure):
+1. Output ONLY a single complete <!DOCTYPE html> document. No markdown, no code fences, no commentary, no <think> blocks.
+2. Use ONLY static HTML + Tailwind CSS via CDN. Do NOT use React, Vue, Svelte, or any JS framework.
+3. Allowed JS: vanilla DOM scripts under 50 lines for small interactivity (toggle menu, smooth scroll). Nothing more.
+4. ALL visible content must be in static HTML — never rendered by JavaScript. The page must look complete with JS disabled.
+5. The <head> must contain exactly: <script src="https://cdn.tailwindcss.com"></script>
+6. Dark theme: body uses class="bg-[#0e1117] text-white" — accent color #3b82f6.
+7. Page must include real semantic content (headings, paragraphs, sections, real copy) — NEVER lorem ipsum.
+8. Keep total output under 7000 tokens to avoid truncation. Be concise.
+
+START YOUR RESPONSE WITH "<!DOCTYPE html>" AND END WITH "</html>". NOTHING ELSE.`,
         },
         {
           role: "user",
