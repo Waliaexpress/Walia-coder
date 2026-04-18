@@ -472,14 +472,18 @@ async function handleGenerate() {
   panel.scrollIntoView({ behavior: "smooth", block: "start" });
 
   try {
-    const res = await fetch("/api/generate", {
+    const res = await authFetch("/api/generate", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${getToken()}`,
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ prompt }),
     });
+
+    if (res.status === 401) {
+      // authFetch already cleared session and triggered showAuth
+      panel.classList.add("hidden");
+      setGenerating(false);
+      return;
+    }
 
     if (!res.ok || !res.body) {
       const data = await res.json().catch(() => ({}));
@@ -588,10 +592,18 @@ function handleLogout() {
 // ─── Protected Fetch ──────────────────────────────────────────────────────────
 
 async function authFetch(url, options = {}) {
-  return fetch(url, {
+  const res = await fetch(url, {
     ...options,
     headers: { Authorization: `Bearer ${getToken()}`, ...(options.headers || {}) },
   });
+
+  if (res.status === 401) {
+    clearSession();
+    showAlert("Session expired — please sign in again.", "error");
+    setTimeout(() => showAuth(), 800);
+  }
+
+  return res;
 }
 
 // ─── Profile ──────────────────────────────────────────────────────────────────
@@ -709,12 +721,25 @@ async function fetchAdminPanel() {
 
 // ─── Boot ─────────────────────────────────────────────────────────────────────
 
-(function init() {
+(async function init() {
   const token = getToken();
   const user  = getUser();
-  if (token && user) {
-    showWorkspace(user, token);
-  } else {
-    showAuth();
+  if (!token || !user) { showAuth(); return; }
+
+  // Optimistically show the workspace while validating the token
+  showWorkspace(user, token);
+
+  // Validate the token is still accepted by the server
+  try {
+    const res = await fetch("/api/users/me", {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (res.status === 401) {
+      clearSession();
+      showAlert("Session expired — please sign in again.", "error");
+      showAuth();
+    }
+  } catch {
+    // Network error on startup — leave workspace visible, will retry on next action
   }
 })();
