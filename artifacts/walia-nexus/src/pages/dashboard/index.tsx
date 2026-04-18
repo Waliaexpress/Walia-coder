@@ -1,120 +1,203 @@
-import { Link, Redirect } from "wouter";
-import { DashboardLayout } from "@/components/layout/DashboardLayout";
+import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { DashboardShell } from "@/components/layout/DashboardShell";
+import { CommandPrompt } from "@/components/workspace/CommandPrompt";
+import { ProjectCard } from "@/components/workspace/ProjectCard";
+import { DeleteModal } from "@/components/workspace/DeleteModal";
+import { EditModal } from "@/components/workspace/EditModal";
 import { useAuth } from "@/lib/auth";
 import { useGetProjectsSummary, useListProjects } from "@workspace/api-client-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Activity, Server, Box, Globe, Plus } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import {
+  useDeleteProjectMutation,
+  useUpdateProjectMutation,
+  useGenerateMutation,
+} from "@/hooks/useProjects";
+import { useToast } from "@/hooks/use-toast";
+import { Box, Globe, Activity, Lock, Loader2 } from "lucide-react";
+
+interface ProjectShape {
+  id: string;
+  title: string;
+  stack: string | null;
+  status: "live" | "private" | "building";
+  createdAt: string | Date;
+}
+
+const METRIC_CONFIG = [
+  { key: "total", label: "Total Projects", icon: Box, color: "text-white/70", glow: "rgba(255,255,255,0.05)" },
+  { key: "live", label: "Live Systems", icon: Globe, color: "text-green-400", glow: "rgba(34,197,94,0.1)" },
+  { key: "building", label: "In Progress", icon: Activity, color: "text-amber-400", glow: "rgba(245,158,11,0.1)" },
+  { key: "private", label: "Private Vaults", icon: Lock, color: "text-blue-400", glow: "rgba(59,130,246,0.1)" },
+] as const;
 
 export default function Dashboard() {
-  const { data: summary, isLoading: isLoadingSummary } = useGetProjectsSummary();
-  const { data: projects, isLoading: isLoadingProjects } = useListProjects();
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const { data: summary } = useGetProjectsSummary();
+  const { data: projects, isLoading } = useListProjects();
+
+  const deleteMutation = useDeleteProjectMutation();
+  const updateMutation = useUpdateProjectMutation();
+  const generateMutation = useGenerateMutation();
+
+  const [deleteTarget, setDeleteTarget] = useState<ProjectShape | null>(null);
+  const [editTarget, setEditTarget] = useState<ProjectShape | null>(null);
+
+  const handleGenerate = (prompt: string) => {
+    generateMutation.mutate(prompt, {
+      onSuccess: (data) => {
+        toast({ title: "Project Initialized", description: data.title ?? "Ready." });
+      },
+      onError: (e) => {
+        toast({ title: "Generation Failed", description: (e as Error).message, variant: "destructive" });
+      },
+    });
+  };
+
+  const handleDelete = () => {
+    if (!deleteTarget) return;
+    deleteMutation.mutate(deleteTarget.id, {
+      onSuccess: () => {
+        toast({ title: "Project Revoked", description: deleteTarget.title });
+        setDeleteTarget(null);
+      },
+      onError: (e) => {
+        toast({ title: "Failed to Revoke", description: e.message, variant: "destructive" });
+        setDeleteTarget(null);
+      },
+    });
+  };
+
+  const handleSaveEdit = (id: string, data: { title: string; stack: string; status: string }) => {
+    updateMutation.mutate(
+      { id, payload: data as { title: string; stack: string; status: "live" | "private" | "building" } },
+      {
+        onSuccess: () => {
+          toast({ title: "Project Updated" });
+          setEditTarget(null);
+        },
+        onError: (e) => {
+          toast({ title: "Update Failed", description: (e as Error).message, variant: "destructive" });
+        },
+      }
+    );
+  };
+
+  const recentProjects: ProjectShape[] = (projects ?? []).slice(0, 8).map((p) => ({
+    ...p,
+    stack: p.stack ?? null,
+    status: p.status as "live" | "private" | "building",
+    createdAt: p.createdAt,
+  }));
 
   return (
-    <DashboardLayout>
-      <div className="mb-8 flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Overview</h1>
-          <p className="text-muted-foreground font-mono mt-1">System status and operational metrics.</p>
+    <DashboardShell>
+      {/* Command Center */}
+      <section className="py-8 md:py-12">
+        <CommandPrompt
+          username={user?.email ?? "operator"}
+          onGenerate={handleGenerate}
+          isGenerating={generateMutation.isPending}
+        />
+      </section>
+
+      {/* Stats row */}
+      <section className="mb-10">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          {METRIC_CONFIG.map((m, i) => {
+            const val = summary ? (summary as Record<string, number>)[m.key] ?? 0 : 0;
+            return (
+              <motion.div
+                key={m.key}
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, delay: i * 0.07 }}
+                className="rounded-xl border border-white/[0.06] p-5 flex flex-col gap-3 hover:border-white/15 transition-colors"
+                style={{ background: "#1c2333" }}
+              >
+                <div className="flex items-center justify-between">
+                  <p className="text-[11px] font-mono uppercase tracking-widest text-white/30">{m.label}</p>
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: m.glow }}>
+                    <m.icon className={`w-4 h-4 ${m.color}`} />
+                  </div>
+                </div>
+                <p className={`text-3xl font-black ${m.color}`}>
+                  {summary ? val : <span className="opacity-30">—</span>}
+                </p>
+              </motion.div>
+            );
+          })}
         </div>
-        <Link href="/dashboard/projects">
-          <Button className="bg-primary/20 text-primary border border-primary hover:bg-primary hover:text-primary-foreground shadow-[0_0_15px_rgba(0,240,255,0.2)]">
-            <Plus className="w-4 h-4 mr-2" />
-            New Project
-          </Button>
-        </Link>
-      </div>
-
-      {/* Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
-        <Card className="bg-card border-white/10 relative overflow-hidden group">
-          <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Total Systems</CardTitle>
-            <Box className="w-4 h-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold">{isLoadingSummary ? '-' : summary?.total || 0}</div>
-          </CardContent>
-        </Card>
-        
-        <Card className="bg-card border-white/10 relative overflow-hidden group">
-          <div className="absolute inset-0 bg-gradient-to-br from-green-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Live Nodes</CardTitle>
-            <Globe className="w-4 h-4 text-green-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-green-500">{isLoadingSummary ? '-' : summary?.live || 0}</div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-card border-white/10 relative overflow-hidden group">
-          <div className="absolute inset-0 bg-gradient-to-br from-secondary/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Building</CardTitle>
-            <Activity className="w-4 h-4 text-secondary" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-secondary">{isLoadingSummary ? '-' : summary?.building || 0}</div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-card border-white/10 relative overflow-hidden group">
-          <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Private Vaults</CardTitle>
-            <Server className="w-4 h-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold">{isLoadingSummary ? '-' : summary?.private || 0}</div>
-          </CardContent>
-        </Card>
-      </div>
+      </section>
 
       {/* Recent Projects */}
-      <div>
-        <h2 className="text-xl font-bold mb-4">Recent Deployments</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {isLoadingProjects ? (
-            <div className="col-span-2 text-center py-12 text-muted-foreground font-mono">Scanning nodes...</div>
-          ) : projects?.length === 0 ? (
-            <div className="col-span-2 text-center py-12 bg-card border border-white/10 rounded-lg flex flex-col items-center">
-              <Server className="w-12 h-12 text-muted-foreground mb-4 opacity-50" />
-              <div className="text-lg font-medium mb-1">No systems deployed</div>
-              <p className="text-sm text-muted-foreground mb-4">Initialize your first project to begin telemetry.</p>
-              <Link href="/dashboard/projects">
-                <Button variant="outline">Initialize Project</Button>
-              </Link>
+      <section>
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h2 className="text-lg font-bold text-white">Recent Deployments</h2>
+            <p className="text-xs text-white/30 font-mono mt-0.5">Your latest project activity</p>
+          </div>
+          {generateMutation.isPending && (
+            <div className="flex items-center gap-2 text-xs text-amber-400 font-mono">
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              Generating...
             </div>
-          ) : (
-            projects?.slice(0, 4).map(p => (
-              <Card key={p.id} className="bg-card border-white/10">
-                <CardHeader className="pb-3">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-lg flex items-center gap-2">
-                      {p.title}
-                    </CardTitle>
-                    <span className={`text-xs px-2 py-0.5 rounded-sm font-mono uppercase ${
-                      p.status === 'live' ? 'bg-green-500/20 text-green-500 border border-green-500/30' :
-                      p.status === 'building' ? 'bg-secondary/20 text-secondary border border-secondary/30' :
-                      'bg-white/10 text-white/70 border border-white/20'
-                    }`}>
-                      {p.status}
-                    </span>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-sm text-muted-foreground font-mono">
-                    ID: {p.id.split('-')[0]}
-                    {p.stack && <><br/>Stack: <span className="text-primary/80">{p.stack}</span></>}
-                  </div>
-                </CardContent>
-              </Card>
-            ))
           )}
         </div>
-      </div>
-    </DashboardLayout>
+
+        {isLoading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div
+                key={i}
+                className="h-40 rounded-xl border border-white/[0.05] animate-pulse"
+                style={{ background: "#1c2333", animationDelay: `${i * 100}ms` }}
+              />
+            ))}
+          </div>
+        ) : recentProjects.length === 0 ? (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="text-center py-16 rounded-xl border border-white/[0.05] border-dashed"
+            style={{ background: "rgba(28,35,51,0.4)" }}
+          >
+            <Box className="w-10 h-10 text-white/10 mx-auto mb-3" />
+            <p className="text-white/30 font-mono text-sm">No projects yet — initialize your first build above.</p>
+          </motion.div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            <AnimatePresence>
+              {recentProjects.map((project, i) => (
+                <ProjectCard
+                  key={project.id}
+                  project={project}
+                  index={i}
+                  onEdit={(p) => setEditTarget(p as ProjectShape)}
+                  onDelete={(p) => setDeleteTarget(p as ProjectShape)}
+                />
+              ))}
+            </AnimatePresence>
+          </div>
+        )}
+      </section>
+
+      {/* Modals */}
+      <DeleteModal
+        open={!!deleteTarget}
+        projectTitle={deleteTarget?.title ?? ""}
+        isPending={deleteMutation.isPending}
+        onConfirm={handleDelete}
+        onCancel={() => setDeleteTarget(null)}
+      />
+
+      <EditModal
+        open={!!editTarget}
+        project={editTarget}
+        isPending={updateMutation.isPending}
+        onSave={handleSaveEdit}
+        onClose={() => setEditTarget(null)}
+      />
+    </DashboardShell>
   );
 }

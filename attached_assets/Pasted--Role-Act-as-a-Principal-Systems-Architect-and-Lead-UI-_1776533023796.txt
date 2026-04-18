@@ -1,0 +1,32 @@
+**Role:** Act as a Principal Systems Architect and Lead UI/UX Engineer with 40 years of expertise. We are building the 'Walia Coder Control Center'—the elite software foundry for the Walia Nexus ecosystem.
+
+**1. The 500% Perfection Engineering Standard:**
+- **Architecture:** Implement 'Clean Architecture' using a modular Repository Pattern. Logic must be decoupled from the UI layer. 
+- **Human-Grade Directory Structure:** Organize the project exactly like a Senior Engineer:
+  - `src/components/` (Atomic UI elements: Button, Card, Modal)
+  - `src/layouts/` (Sidebar, Main Shell)
+  - `src/services/` (Prisma/PostgreSQL logic & API handlers)
+  - `src/hooks/` (Shared state & view-switcher logic)
+  - `src/styles/` (Global Tailwind & Framer-Motion configs)
+- **Code Quality:** Write 'Production-Grade' TypeScript. No placeholders. Strict type definitions, error boundaries, and logging are required.
+
+**2. The Full-Lifecycle CRUD Engine:**
+- **Instant SPA Navigation:** Implement a high-speed state-driven view-switcher. Transitions between 'Home', 'Projects', and 'Admin' must be sub-100ms.
+- **Real-Time Persistence:** All edits to project metadata (Title, Stack, Status) must sync to PostgreSQL via Prisma immediately.
+- **Secure Destruction:** Implement 'Deletable' logic with a custom Tailwind-styled Confirmation Modal using 'Danger Red' (#ef4444). Use Optimistic UI to remove items from the grid instantly upon confirmation.
+
+**3. Visual Identity & Workspace UI (The Obsidian-Core Vibe):**
+- **Theme:** Strict Dark Mode. Background: #0e1117 | Panels: #1c2333.
+- **Accents:** Electric Blue (#3b82f6) for primary flow; Warning Gold (#f59e0b) for badges; White/Gray-200 for typography.
+- **Interactions:** Use 'framer-motion' for 60fps micro-interactions. Every hover, click, and page switch must feel premium and tactile.
+
+**4. Core Functionality - Phase 1 Execution:**
+- **The Shell:** Build the fixed Sidebar with the Workspace Dropdown ("walianexus2025's Workspace") and the navigation links (Home, Projects, Admin, Settings).
+- **The Command Center:** Build the Hero Section ("Hi walianexus2025, what do you want to make?") and the large AI Prompt Bar.
+- **The Interactive Grid:** Build the 'Recent Projects' grid. Each card must be a functional component with:
+    - Dynamic Status Badges (Live/Private).
+    - Tech Stack Tags (e.g., Auth API • RBAC • PostgreSQL).
+    - An 'Actions' menu with 'Edit' and 'Revoke' (Delete) functionality.
+
+**Action Required:**
+Initialize the human-grade directory structure and the enterprise-grade scaffold now. Prioritize the 'Live Preview'—render the UI immediately so I can see the real-world result. Output the file architecture once the clickable/editable/deletable engine is verified.

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { DashboardLayout } from "@/components/layout/DashboardLayout";
+import { DashboardShell } from "@/components/layout/DashboardShell";
 import { useListProjects, useCreateProject, useDeleteProject } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { getListProjectsQueryKey, getGetProjectsSummaryQueryKey } from "@workspace/api-client-react";
@@ -81,7 +81,7 @@ export default function Projects() {
   };
 
   return (
-    <DashboardLayout>
+    <DashboardShell>
       <div className="mb-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Active Systems</h1>
@@ -211,6 +211,6 @@ export default function Projects() {
           </div>
         )}
       </div>
-    </DashboardLayout>
+    </DashboardShell>
   );
 }

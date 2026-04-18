@@ -1,4 +1,4 @@
-import { DashboardLayout } from "@/components/layout/DashboardLayout";
+import { DashboardShell } from "@/components/layout/DashboardShell";
 import { useAdminListUsers, useAdminDeleteUser } from "@workspace/api-client-react";
 import { useAuth } from "@/lib/auth";
 import { Redirect } from "wouter";
@@ -42,7 +42,7 @@ export default function Admin() {
   };
 
   return (
-    <DashboardLayout>
+    <DashboardShell>
       <div className="mb-8 flex items-center gap-3">
         <ShieldAlert className="w-8 h-8 text-destructive" />
         <div>
@@ -114,6 +114,6 @@ export default function Admin() {
           </table>
         </div>
       </div>
-    </DashboardLayout>
+    </DashboardShell>
   );
 }

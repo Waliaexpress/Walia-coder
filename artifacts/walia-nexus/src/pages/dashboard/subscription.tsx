@@ -1,4 +1,4 @@
-import { DashboardLayout } from "@/components/layout/DashboardLayout";
+import { DashboardShell } from "@/components/layout/DashboardShell";
 import { useGetMySubscription, useCreateSubscription } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { getGetMySubscriptionQueryKey } from "@workspace/api-client-react";
@@ -58,7 +58,7 @@ export default function Subscription() {
   ];
 
   return (
-    <DashboardLayout>
+    <DashboardShell>
       <div className="mb-8">
         <h1 className="text-3xl font-bold tracking-tight">Resource Allocation</h1>
         <p className="text-muted-foreground font-mono mt-1">Manage platform quotas and capabilities.</p>
@@ -144,6 +144,6 @@ export default function Subscription() {
           );
         })}
       </div>
-    </DashboardLayout>
+    </DashboardShell>
   );
 }
