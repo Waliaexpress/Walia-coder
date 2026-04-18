@@ -485,6 +485,93 @@ function prefillPrompt(type) {
   }
 }
 
+// ─── Context Menu / Attachments ───────────────────────────────────────────────
+
+let _attachments = [];
+
+function toggleContextMenu(e) {
+  e?.stopPropagation();
+  const menu = document.getElementById("context-menu");
+  if (!menu) return;
+  menu.classList.toggle("hidden");
+  // Close on outside click
+  if (!menu.classList.contains("hidden")) {
+    setTimeout(() => {
+      const handler = (ev) => {
+        if (!menu.contains(ev.target) && ev.target.id !== "btn-context") {
+          menu.classList.add("hidden");
+          document.removeEventListener("mousedown", handler);
+        }
+      };
+      document.addEventListener("mousedown", handler);
+    }, 10);
+  }
+}
+
+function handleContextAction(kind) {
+  document.getElementById("context-menu")?.classList.add("hidden");
+  switch (kind) {
+    case "upload":
+      document.getElementById("hidden-file-input")?.click();
+      break;
+    case "drive":
+      addAttachment("Google Drive");
+      break;
+    case "photos":
+      addAttachment("Photos");
+      break;
+    case "code":
+      const url = window.prompt("Paste a Git repo or code URL:");
+      if (url?.trim()) addAttachment(`Code: ${url.trim()}`);
+      break;
+    case "notebooklm":
+      const nb = window.prompt("Paste a NotebookLM share URL:");
+      if (nb?.trim()) addAttachment(`NotebookLM: ${nb.trim()}`);
+      break;
+    case "figma":
+      const fig = window.prompt("Paste a Figma file URL:");
+      if (fig?.trim()) addAttachment(`Figma: ${fig.trim()}`);
+      break;
+    case "skill":
+      const skill = window.prompt("Skill name (e.g. 'design-thinker', 'data-visualization'):");
+      if (skill?.trim()) addAttachment(`Skill: ${skill.trim()}`);
+      break;
+  }
+}
+
+function handleFileUpload(e) {
+  const files = Array.from(e.target.files || []);
+  files.forEach((f) => addAttachment(f.name));
+  e.target.value = "";
+}
+
+function addAttachment(label) {
+  _attachments.push(label);
+  renderAttachments();
+}
+
+function removeAttachment(idx) {
+  _attachments.splice(idx, 1);
+  renderAttachments();
+}
+
+function renderAttachments() {
+  const wrap = document.getElementById("attachment-chips");
+  if (!wrap) return;
+  if (_attachments.length === 0) {
+    wrap.classList.add("hidden");
+    wrap.innerHTML = "";
+    return;
+  }
+  wrap.classList.remove("hidden");
+  wrap.innerHTML = _attachments
+    .map((name, i) => {
+      const safe = escapeHtml(name.length > 40 ? name.slice(0, 38) + "…" : name);
+      return `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-blue-500/15 border border-blue-500/30 text-blue-300 text-[11px] font-mono">${safe}<button onclick="removeAttachment(${i})" class="hover:text-white ml-1 leading-none">×</button></span>`;
+    })
+    .join("");
+}
+
 // ─── AI Generate ──────────────────────────────────────────────────────────────
 
 let currentGeneratedCode = "";
