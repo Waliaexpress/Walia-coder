@@ -5,7 +5,13 @@ import {
   getListProjectsQueryKey,
   getGetProjectsSummaryQueryKey,
 } from "@workspace/api-client-react";
-import { apiUpdateProject, apiGenerateProject, ProjectPayload } from "@/services/projects.service";
+import {
+  apiUpdateProject,
+  apiGenerateProject,
+  ProjectPayload,
+  GeneratedProject,
+  GenerateResult,
+} from "@/services/projects.service";
 
 export { useListProjects };
 
@@ -55,11 +61,22 @@ export function useUpdateProjectMutation() {
   });
 }
 
-export function useGenerateMutation() {
+export function useGenerateMutation(opts?: {
+  onProjectCreated?: (p: GeneratedProject) => void;
+}) {
   const qc = useQueryClient();
 
-  return useMutation({
-    mutationFn: (prompt: string) => apiGenerateProject(prompt),
+  return useMutation<GenerateResult, Error, string>({
+    mutationFn: (prompt: string) =>
+      apiGenerateProject(prompt, {
+        onProjectCreated: (p) => {
+          // Optimistically prepend the new card to the list immediately
+          qc.setQueryData(getListProjectsQueryKey(), (old: unknown) =>
+            Array.isArray(old) ? [p, ...old] : [p]
+          );
+          opts?.onProjectCreated?.(p);
+        },
+      }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: getListProjectsQueryKey() });
       qc.invalidateQueries({ queryKey: getGetProjectsSummaryQueryKey() });

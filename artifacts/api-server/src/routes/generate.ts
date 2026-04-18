@@ -3,6 +3,7 @@ import OpenAI from "openai";
 import { db, projectsTable } from "@workspace/db";
 import { requireAuth } from "../middlewares/auth.js";
 import { logger } from "../lib/logger.js";
+import { eq } from "drizzle-orm";
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -57,15 +58,10 @@ router.post("/generate", requireAuth, async (req, res) => {
   const userId = req.user!.sub;
   const { title, stack } = inferProjectMeta(prompt);
 
-  // Insert project FIRST so the UI gets instant feedback
+  // Insert project immediately — client gets instant card feedback
   const [project] = await db
     .insert(projectsTable)
-    .values({
-      title,
-      stack,
-      status: "private",
-      userId,
-    })
+    .values({ title, stack, status: "building", userId })
     .returning();
 
   res.setHeader("Content-Type", "text/event-stream");
@@ -74,10 +70,16 @@ router.post("/generate", requireAuth, async (req, res) => {
   res.setHeader("X-Accel-Buffering", "no");
   res.flushHeaders();
 
-  // Emit the new project immediately - React client can resolve here
-  res.write(`data: ${JSON.stringify({ project })}\n\n`);
+  // Emit project metadata first so the client can optimistically add the card
+  const safeWrite = (data: string) => {
+    try { res.write(data); } catch { /* client disconnected, continue anyway */ }
+  };
+
+  safeWrite(`data: ${JSON.stringify({ project })}\n\n`);
 
   let fullContent = "";
+  let clientConnected = true;
+  res.on("close", () => { clientConnected = false; });
 
   try {
     const stream = await openai.chat.completions.create({
@@ -86,23 +88,17 @@ router.post("/generate", requireAuth, async (req, res) => {
       messages: [
         {
           role: "system",
-          content: `You are Walia Coder — an elite AI software engineer producing 500% perfect, production-grade code.
+          content: `You are Walia Coder — an elite AI that generates complete, self-contained, runnable web applications as a SINGLE HTML file.
 
-When given a project request, you output a complete, runnable implementation with:
-- Clean, professional code with clear inline comments
-- Modern best practices for the chosen stack
-- Complete file structure shown as separate code blocks per file
-- Each file preceded by: // FILE: path/to/filename.ext
-- No placeholders, no "TODO", no mocked data — real, working code only
-- Beautiful UI with dark theme when relevant (bg #0e1117, accent #3b82f6)
-
-Format each file block as:
-\`\`\`typescript
-// FILE: src/filename.ts
-// code here
-\`\`\`
-
-End with a "## Project Summary" section listing: files created, dependencies to install, and how to run.`,
+CRITICAL RULES:
+- Output ONLY a single complete <!DOCTYPE html> document. Nothing else.
+- No markdown. No explanation. No code fences. Just the raw HTML file.
+- The HTML file must be 100% self-contained: all CSS inline, all JS inline, no external dependencies except CDN links.
+- Use Tailwind CSS via CDN: <script src="https://cdn.tailwindcss.com"></script>
+- Use a dark theme by default (background #0e1117, accent #3b82f6, text white).
+- Include real, functional UI — no lorem ipsum, no placeholder content.
+- If the request mentions a specific framework (React, Vue) use the CDN version via unpkg.
+- The result must render beautifully and be fully interactive when opened in a browser.`,
         },
         {
           role: "user",
@@ -116,28 +112,40 @@ End with a "## Project Summary" section listing: files created, dependencies to 
       const content = chunk.choices[0]?.delta?.content;
       if (content) {
         fullContent += content;
-        res.write(`data: ${JSON.stringify({ content })}\n\n`);
+        if (clientConnected) {
+          safeWrite(`data: ${JSON.stringify({ content })}\n\n`);
+        }
       }
     }
 
-    const [project] = await db
-      .insert(projectsTable)
-      .values({
-        title,
-        stack,
-        status: "private",
-        userId,
-      })
-      .returning({ id: projectsTable.id });
+    // Extract the HTML — strip any accidental markdown code fences
+    let html = fullContent.trim();
+    const fenceMatch = html.match(/```(?:html)?\n?([\s\S]*?)```/);
+    if (fenceMatch) html = fenceMatch[1].trim();
+    if (!html.toLowerCase().startsWith("<!doctype")) {
+      html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><script src="https://cdn.tailwindcss.com"></script></head><body class="bg-[#0e1117] text-white p-8">${html}</body></html>`;
+    }
 
-    res.write(`data: ${JSON.stringify({ done: true, projectId: project?.id })}\n\n`);
-    res.end();
+    // Persist the generated HTML and mark project as live
+    await db
+      .update(projectsTable)
+      .set({ generatedCode: html, status: "live", updatedAt: new Date() })
+      .where(eq(projectsTable.id, project.id));
 
-    logger.info({ userId, title, stack }, "Project generated via AI");
+    safeWrite(`data: ${JSON.stringify({ done: true, projectId: project.id })}\n\n`);
+
+    logger.info({ userId, title, stack, projectId: project.id }, "Project generated");
   } catch (err) {
     logger.error(err, "AI generation failed");
-    res.write(`data: ${JSON.stringify({ error: "Generation failed. Please try again." })}\n\n`);
-    res.end();
+    // Mark project as private on failure
+    await db
+      .update(projectsTable)
+      .set({ status: "private", updatedAt: new Date() })
+      .where(eq(projectsTable.id, project.id))
+      .catch(() => {});
+    safeWrite(`data: ${JSON.stringify({ error: "Generation failed. Please try again." })}\n\n`);
+  } finally {
+    try { res.end(); } catch { /* already closed */ }
   }
 });
 

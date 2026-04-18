@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useLocation } from "wouter";
 import { DashboardShell } from "@/components/layout/DashboardShell";
 import { CommandPrompt } from "@/components/workspace/CommandPrompt";
 import { ProjectCard } from "@/components/workspace/ProjectCard";
@@ -33,6 +34,7 @@ const METRIC_CONFIG = [
 export default function Dashboard() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const [, navigate] = useLocation();
   const { data: summary } = useGetProjectsSummary();
   const { data: projects, isLoading } = useListProjects();
 
@@ -45,8 +47,11 @@ export default function Dashboard() {
 
   const handleGenerate = (prompt: string) => {
     generateMutation.mutate(prompt, {
-      onSuccess: (data) => {
-        toast({ title: "Project Initialized", description: data.title ?? "Ready." });
+      onSuccess: (result) => {
+        // Navigate to live preview — the HTML is now stored and ready
+        navigate(
+          `/dashboard/preview/${result.projectId}?title=${encodeURIComponent(result.project.title)}`
+        );
       },
       onError: (e) => {
         toast({ title: "Generation Failed", description: (e as Error).message, variant: "destructive" });

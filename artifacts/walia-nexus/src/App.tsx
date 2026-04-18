@@ -13,6 +13,7 @@ import Dashboard from "@/pages/dashboard/index";
 import Projects from "@/pages/dashboard/projects";
 import Subscription from "@/pages/dashboard/subscription";
 import Admin from "@/pages/dashboard/admin";
+import PreviewPage from "@/pages/dashboard/preview";
 
 // Initialize API configuration
 initApi();
@@ -38,6 +39,7 @@ function Router() {
       <Route path="/dashboard/projects" component={Projects} />
       <Route path="/dashboard/subscription" component={Subscription} />
       <Route path="/dashboard/admin" component={Admin} />
+      <Route path="/dashboard/preview/:id" component={PreviewPage} />
       
       <Route component={NotFound} />
     </Switch>

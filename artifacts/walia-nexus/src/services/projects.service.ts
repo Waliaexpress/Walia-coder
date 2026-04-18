@@ -48,13 +48,20 @@ export interface GeneratedProject {
   userId: string;
 }
 
+export interface GenerateResult {
+  project: GeneratedProject;
+  projectId: string;
+}
+
 /**
- * Calls the streaming /api/generate endpoint and resolves as soon as the
- * server emits the newly-created project. The remainder of the SSE stream
- * (LLM-generated code chunks) is discarded by cancelling the reader — keeping
- * the perceived latency at ~50ms instead of 30-90s.
+ * Streams /api/generate and:
+ *  - Calls onProjectCreated immediately when the server emits {project} (instant card feedback)
+ *  - Resolves with { project, projectId } when the server emits {done} (preview is ready)
  */
-export async function apiGenerateProject(prompt: string): Promise<GeneratedProject> {
+export async function apiGenerateProject(
+  prompt: string,
+  opts?: { onProjectCreated?: (p: GeneratedProject) => void }
+): Promise<GenerateResult> {
   const res = await fetch(`${getBase()}/api/generate`, {
     method: "POST",
     headers: authHeaders(),
@@ -69,11 +76,13 @@ export async function apiGenerateProject(prompt: string): Promise<GeneratedProje
   const reader = res.body.getReader();
   const decoder = new TextDecoder();
   let buffer = "";
+  let createdProject: GeneratedProject | null = null;
 
   try {
     while (true) {
       const { done, value } = await reader.read();
       if (done) break;
+
       buffer += decoder.decode(value, { stream: true });
       const events = buffer.split("\n\n");
       buffer = events.pop() ?? "";
@@ -85,15 +94,21 @@ export async function apiGenerateProject(prompt: string): Promise<GeneratedProje
         try {
           const parsed = JSON.parse(payload);
           if (parsed.error) throw new Error(parsed.error);
-          if (parsed.project) {
-            // Stop reading the rest of the stream — let server complete in background.
+
+          // First event — project metadata created instantly
+          if (parsed.project && !createdProject) {
+            createdProject = parsed.project as GeneratedProject;
+            opts?.onProjectCreated?.(createdProject);
+          }
+
+          // Final event — generation complete, preview is ready
+          if (parsed.done && parsed.projectId && createdProject) {
             reader.cancel().catch(() => {});
-            return parsed.project as GeneratedProject;
+            return { project: createdProject, projectId: parsed.projectId as string };
           }
         } catch (e) {
-          if (e instanceof Error && e.message !== "Unexpected end of JSON input") {
-            throw e;
-          }
+          if (e instanceof SyntaxError) continue;
+          throw e;
         }
       }
     }
@@ -101,5 +116,13 @@ export async function apiGenerateProject(prompt: string): Promise<GeneratedProje
     reader.cancel().catch(() => {});
   }
 
+  if (createdProject) {
+    return { project: createdProject, projectId: createdProject.id };
+  }
   throw new Error("Generation stream ended without project payload");
+}
+
+/** Returns the URL to render a project's live preview in an iframe */
+export function getPreviewUrl(projectId: string): string {
+  return `${getBase()}/api/projects/${projectId}/preview`;
 }

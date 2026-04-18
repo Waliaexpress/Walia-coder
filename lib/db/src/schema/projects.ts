@@ -11,6 +11,7 @@ export const projectsTable = pgTable("projects", {
   title: text("title").notNull(),
   stack: text("stack").notNull().default(""),
   status: projectStatusEnum("status").notNull().default("private"),
+  generatedCode: text("generated_code"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });

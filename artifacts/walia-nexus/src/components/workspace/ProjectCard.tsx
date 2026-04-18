@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Edit2, Trash2, Clock, ExternalLink } from "lucide-react";
+import { Edit2, Trash2, Clock, Play } from "lucide-react";
+import { useLocation } from "wouter";
 import { StatusBadge } from "./StatusBadge";
 
 interface Project {
@@ -20,6 +21,7 @@ interface ProjectCardProps {
 
 export function ProjectCard({ project, index, onEdit, onDelete }: ProjectCardProps) {
   const [hovered, setHovered] = useState(false);
+  const [, navigate] = useLocation();
 
   const stackTags = project.stack
     ? project.stack.split(/\s*[•·|,]\s*/).filter(Boolean)
@@ -28,10 +30,15 @@ export function ProjectCard({ project, index, onEdit, onDelete }: ProjectCardPro
   const timeAgo = (date: string | Date) => {
     const ms = Date.now() - new Date(date).getTime();
     const mins = Math.floor(ms / 60000);
+    if (mins < 1) return "Just now";
     if (mins < 60) return `${mins}m ago`;
     const hrs = Math.floor(mins / 60);
     if (hrs < 24) return `${hrs}h ago`;
     return `${Math.floor(hrs / 24)}d ago`;
+  };
+
+  const openPreview = () => {
+    navigate(`/dashboard/preview/${project.id}?title=${encodeURIComponent(project.title)}`);
   };
 
   return (
@@ -42,7 +49,8 @@ export function ProjectCard({ project, index, onEdit, onDelete }: ProjectCardPro
       transition={{ duration: 0.3, delay: index * 0.06 }}
       onHoverStart={() => setHovered(true)}
       onHoverEnd={() => setHovered(false)}
-      className="relative rounded-xl border border-white/[0.07] bg-[#1c2333] overflow-hidden group transition-all duration-200 hover:border-blue-500/30 hover:shadow-[0_0_24px_rgba(59,130,246,0.08)] flex flex-col"
+      className="relative rounded-xl border border-white/[0.07] bg-[#1c2333] overflow-hidden group transition-all duration-200 hover:border-blue-500/30 hover:shadow-[0_0_24px_rgba(59,130,246,0.08)] flex flex-col cursor-pointer"
+      onClick={openPreview}
     >
       {/* Blue top accent line on hover */}
       <motion.div
@@ -52,6 +60,19 @@ export function ProjectCard({ project, index, onEdit, onDelete }: ProjectCardPro
         transition={{ duration: 0.25 }}
         style={{ transformOrigin: "left" }}
       />
+
+      {/* Preview overlay on hover */}
+      <motion.div
+        className="absolute inset-0 flex items-center justify-center bg-blue-500/5 pointer-events-none z-10"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: hovered ? 1 : 0 }}
+        transition={{ duration: 0.2 }}
+      >
+        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-500/20 border border-blue-500/30 text-blue-300 text-xs font-semibold">
+          <Play className="w-3 h-3 fill-current" />
+          Launch Preview
+        </div>
+      </motion.div>
 
       <div className="p-5 flex-1">
         {/* Header row */}
@@ -84,7 +105,10 @@ export function ProjectCard({ project, index, onEdit, onDelete }: ProjectCardPro
       </div>
 
       {/* Footer actions */}
-      <div className="px-5 py-3 border-t border-white/[0.05] flex items-center justify-between bg-white/[0.02]">
+      <div
+        className="px-5 py-3 border-t border-white/[0.05] flex items-center justify-between bg-white/[0.02]"
+        onClick={(e) => e.stopPropagation()}
+      >
         <span className="text-[10px] font-mono text-white/20 truncate max-w-[80px]">
           #{project.id.split("-")[0]}
         </span>

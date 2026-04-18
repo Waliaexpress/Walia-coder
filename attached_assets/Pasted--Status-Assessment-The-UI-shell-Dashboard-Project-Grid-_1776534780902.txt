@@ -1,0 +1,21 @@
+**Status Assessment:** The UI shell (Dashboard, Project Grid, Generating states) is pixel-perfect and matches the Obsidian-Core vibe. Excellent work on the frontend layout.
+
+**CRITICAL ARCHITECTURAL FAILURE:** You are missing the 'Live Preview' rendering engine. When I click 'Generate', or when I click a card in the 'Recent Projects' grid, I am just seeing metadata. I need to see the ACTUAL generated application (e.g., the marketing website) running live.
+
+**Execution Directive: Implement the Live Preview Engine**
+As the Lead Architect, I require you to fix this immediately by implementing a dynamic preview container. Execute the following:
+
+1. **The Split-Pane or Full-Screen Preview:** - Modify the main layout. When a project is actively generating or clicked, the UI must split or transition to show a `<PreviewFrame>` component.
+   - This `<PreviewFrame>` must be a large, central container (mimicking a browser window) that actually renders the generated code. 
+
+2. **The Rendering Mechanism (Choose the best fit for our Vite/React stack):**
+   - **Option A (Dynamic Routing):** If you are generating React components within this same workspace, use React Router to mount the generated component directly inside the `<PreviewFrame>`.
+   - **Option B (Iframe Sandbox):** If you are generating standalone HTML/JS or running a separate dev server process, embed an `<iframe src="/preview-url">` inside the frame that points to the live output.
+
+3. **UX Flow:**
+   - User types "Build a marketing website" -> Clicks Generate.
+   - The UI shows "Generating..." 
+   - ONCE COMPLETE: The screen transitions from the Dashboard Grid to the 'Live Preview' Workspace, showing the actual compiled website you just wrote.
+
+**Action Required:**
+Stop generating placeholder cards. Write the React logic to physically mount and render the generated project code into the browser view. Do not respond with explanations—update the files and ensure the next generation actually renders a live website on my screen.
