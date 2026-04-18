@@ -1,0 +1,27 @@
+**Execution Directive: The "Plus-Menu" Context Ingestion UI**
+
+**Status Assessment:** We need to upgrade the main AI Prompt Box to handle multi-modal context (files, links, skills) exactly like industry-leading IDEs.
+
+**Execution Directive:**
+As Lead UI/UX Engineer, implement the 'Context Action Menu' inside the Prompt Input component. Execute the following frontend mutation using React, Tailwind CSS, and Framer Motion.
+
+**1. The Input Container & Trigger:**
+- At the bottom-left of the main `textarea` wrapper, add a minimalist `+` button (text-gray-400 hover:text-white transition-colors).
+- Next to it, add the dashed-box "target" icon as seen in professional AI editors.
+- On the bottom-right of the wrapper, add small UI elements for 'Power' (dropdown) and a 'Plan' (checkbox/toggle).
+
+**2. The Popover Context Menu:**
+- When the `+` button is clicked, open an absolute-positioned dropdown menu directly above it.
+- **Vibe & Styling:** It must be a sleek, high-contrast dark panel: `bg-[#1e1e1e] border border-gray-700 rounded-lg shadow-2xl py-1 w-64 z-50`.
+- Implement smooth open/close animations (fade and slight scale-up) using Framer Motion.
+- Add a click-outside listener to close the menu automatically.
+
+**3. The Exact Menu Items:**
+Build the menu with the following items as perfectly aligned rows (`flex items-center gap-3 px-3 py-2 hover:bg-blue-600/20 hover:text-white text-gray-300 cursor-pointer text-sm transition-colors`):
+  1. `[Upload Icon]` **Upload a file** (Wire this to a hidden `<input type="file" />`).
+  2. `[Figma Icon]` **Attach a Figma design** (Opens a small prompt to paste a URL).
+  3. `[Squares Icon]` **Create something new**
+  4. `[Shapes/Skill Icon]` **Use a skill** (Add a right chevron `>` to indicate a sub-menu).
+
+**Action Required:**
+Build this exact UI component now. Prove it works by allowing me to click the `+` button, see the perfectly styled dropdown menu pop up, and click "Upload a file" to open my local file browser.
