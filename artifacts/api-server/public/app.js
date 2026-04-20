@@ -965,6 +965,41 @@ function wsHandleKey(e) {
   }
 }
 
+function wsShowProcessingOverlay() {
+  let overlay = document.getElementById("ws-processing-overlay");
+  if (overlay) { overlay.style.display = "flex"; return; }
+  overlay = document.createElement("div");
+  overlay.id = "ws-processing-overlay";
+  overlay.style.cssText = [
+    "position:absolute;inset:0;background:rgba(13,17,23,0.85);",
+    "display:flex;flex-direction:column;align-items:center;justify-content:center;",
+    "gap:14px;z-index:50;border-radius:0;pointer-events:all;backdrop-filter:blur(2px);"
+  ].join("");
+  overlay.innerHTML = `
+    <div style="display:flex;gap:6px;align-items:center;">
+      <span style="width:8px;height:8px;border-radius:50%;background:#3b82f6;animation:wsPulse 0.9s ease-in-out infinite;"></span>
+      <span style="width:8px;height:8px;border-radius:50%;background:#3b82f6;animation:wsPulse 0.9s ease-in-out 0.2s infinite;"></span>
+      <span style="width:8px;height:8px;border-radius:50%;background:#3b82f6;animation:wsPulse 0.9s ease-in-out 0.4s infinite;"></span>
+    </div>
+    <p style="font-size:12px;font-family:monospace;color:#60a5fa;font-weight:600;letter-spacing:0.05em;">Engine Processing Update…</p>
+    <p id="ws-overlay-chars" style="font-size:10px;font-family:monospace;color:#374151;">Receiving code…</p>
+  `;
+  if (!document.getElementById("ws-pulse-style")) {
+    const s = document.createElement("style");
+    s.id = "ws-pulse-style";
+    s.textContent = "@keyframes wsPulse{0%,100%{opacity:0.3;transform:scale(0.8)}50%{opacity:1;transform:scale(1.2)}}";
+    document.head.appendChild(s);
+  }
+  const pane = document.getElementById("ws-pane-code");
+  pane.style.position = "relative";
+  pane.appendChild(overlay);
+}
+
+function wsHideProcessingOverlay() {
+  const overlay = document.getElementById("ws-processing-overlay");
+  if (overlay) overlay.style.display = "none";
+}
+
 async function wsSendIteration() {
   if (!_wsProjectId || _wsIterating) return;
   const input = document.getElementById("ws-chat-input");
@@ -972,15 +1007,26 @@ async function wsSendIteration() {
   if (!prompt) return;
 
   input.value = "";
+  input.disabled = true;
   _wsIterating = true;
   document.getElementById("ws-ai-badge").style.display = "inline";
   document.getElementById("ws-send-btn").disabled = true;
+  wsShowProcessingOverlay();
 
   wsAddMessage("user", prompt);
   const botBubble = wsAddMessage("assistant", "");
   botBubble.innerHTML = `<span style="color:#6b7280;font-style:italic;">Thinking…</span>`;
 
   let accumulated = "";
+  let previewDebounceTimer = null;
+  let firstChunk = true;
+
+  const schedulePreviewUpdate = () => {
+    if (previewDebounceTimer) clearTimeout(previewDebounceTimer);
+    previewDebounceTimer = setTimeout(() => {
+      wsUpdatePreview();
+    }, 800);
+  };
 
   try {
     const res = await authFetch(`/api/projects/${_wsProjectId}/iterate`, {
@@ -989,7 +1035,10 @@ async function wsSendIteration() {
       body: JSON.stringify({ prompt, currentCode: _wsCode }),
     });
 
-    if (!res.ok || !res.body) throw new Error(`HTTP ${res.status}`);
+    if (!res.ok || !res.body) {
+      const errText = await res.text().catch(() => `HTTP ${res.status}`);
+      throw new Error(errText || `HTTP ${res.status}`);
+    }
 
     const reader = res.body.getReader();
     const decoder = new TextDecoder();
@@ -1005,32 +1054,47 @@ async function wsSendIteration() {
 
       for (const event of events) {
         if (!event.startsWith("data: ")) continue;
-        try {
-          const parsed = JSON.parse(event.slice(6));
-          if (parsed.error) throw new Error(parsed.error);
-          if (parsed.content) {
-            accumulated += parsed.content;
-            _wsCode = accumulated;
-            document.getElementById("ws-code-editor").value = _wsCode;
-            wsUpdateStats();
-            wsUpdatePreview();
-            botBubble.innerHTML = `<span style="color:#fbbf24;font-style:italic;">Applying changes…</span>`;
+        let parsed;
+        try { parsed = JSON.parse(event.slice(6)); } catch { continue; }
+
+        if (parsed.error) throw new Error(parsed.error);
+
+        if (parsed.content) {
+          if (firstChunk) {
+            botBubble.innerHTML = `<span style="color:#fbbf24;font-style:italic;">Streaming code…</span>`;
+            firstChunk = false;
           }
-          if (parsed.done) {
-            botBubble.textContent = "Done! Changes applied to the preview.";
-          }
-        } catch (e) {
-          if (e instanceof SyntaxError) continue;
-          throw e;
+          accumulated += parsed.content;
+          _wsCode = accumulated;
+
+          const editor = document.getElementById("ws-code-editor");
+          editor.value = _wsCode;
+          wsUpdateStats();
+
+          const overlayChars = document.getElementById("ws-overlay-chars");
+          if (overlayChars) overlayChars.textContent = `${accumulated.length.toLocaleString()} chars received`;
+
+          schedulePreviewUpdate();
+        }
+
+        if (parsed.done) {
+          if (previewDebounceTimer) clearTimeout(previewDebounceTimer);
+          wsUpdatePreview();
+          botBubble.textContent = "Done! Changes applied to the live preview.";
+          wsUpdateStats();
         }
       }
     }
   } catch (err) {
+    if (previewDebounceTimer) clearTimeout(previewDebounceTimer);
     botBubble.innerHTML = `<span style="color:#f87171;">Error: ${escapeHtml(err.message || "Iteration failed.")}</span>`;
   } finally {
     _wsIterating = false;
+    input.disabled = false;
+    input.focus();
     document.getElementById("ws-ai-badge").style.display = "none";
     document.getElementById("ws-send-btn").disabled = false;
+    wsHideProcessingOverlay();
   }
 }
 
@@ -1038,7 +1102,7 @@ function wsOnCodeEdit() {
   _wsCode = document.getElementById("ws-code-editor").value;
   wsUpdateStats();
   if (_wsCodeEditTimer) clearTimeout(_wsCodeEditTimer);
-  _wsCodeEditTimer = setTimeout(wsUpdatePreview, 400);
+  _wsCodeEditTimer = setTimeout(wsUpdatePreview, 800);
 }
 
 function wsUpdatePreview() {
