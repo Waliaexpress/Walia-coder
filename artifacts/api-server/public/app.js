@@ -183,54 +183,7 @@ function buildProjectCard(p, idx) {
 
 /* ================== LIVE PREVIEW MODAL ================== */
 function openPreviewModal(projectId, title) {
-  // Remove any existing modal first
-  const existing = document.getElementById("preview-modal");
-  if (existing) existing.remove();
-
-  const modal = document.createElement("div");
-  modal.id = "preview-modal";
-  modal.className = "fixed inset-0 z-[100] bg-black/85 backdrop-blur-sm flex items-center justify-center p-4 animate-fadeIn";
-  modal.style.animation = "fadeIn 0.2s ease-out";
-  modal.innerHTML = `
-    <div class="w-full max-w-7xl h-[90vh] flex flex-col rounded-xl overflow-hidden border border-gray-800 bg-[#0e1117] shadow-2xl">
-      <div class="flex items-center gap-3 px-4 py-2.5 bg-[#1c2333] border-b border-gray-800">
-        <div class="flex items-center gap-1.5">
-          <button onclick="closePreviewModal()" class="w-3 h-3 rounded-full bg-red-500 hover:scale-110 transition-transform" title="Close"></button>
-          <div class="w-3 h-3 rounded-full bg-amber-500/40"></div>
-          <div class="w-3 h-3 rounded-full bg-green-500/40"></div>
-        </div>
-        <div class="flex-1 flex items-center gap-2 bg-[#0e1117] rounded-md px-3 py-1 border border-gray-800">
-          <div class="w-2 h-2 rounded-full bg-green-400/80"></div>
-          <span class="text-[11px] font-mono text-gray-500 truncate">walia://preview/${projectId.split("-")[0]} — ${title}</span>
-        </div>
-        <button onclick="document.getElementById('preview-iframe').src = document.getElementById('preview-iframe').src" class="text-gray-500 hover:text-white text-xs px-2 py-1 rounded hover:bg-gray-800 transition-colors" title="Reload">
-          <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
-        </button>
-        <a href="/api/projects/${projectId}/preview" target="_blank" rel="noopener" class="text-gray-500 hover:text-white text-xs px-2 py-1 rounded hover:bg-gray-800 transition-colors" title="Open in new tab">
-          <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
-        </a>
-        <button onclick="closePreviewModal()" class="text-gray-500 hover:text-red-400 text-xs px-2 py-1 rounded hover:bg-red-500/10 transition-colors">
-          <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-        </button>
-      </div>
-      <iframe
-        id="preview-iframe"
-        src="/api/projects/${projectId}/preview"
-        class="flex-1 w-full bg-white border-0"
-        sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
-        title="Live Preview: ${title}"></iframe>
-    </div>`;
-
-  // Click backdrop to close
-  modal.addEventListener("click", (e) => {
-    if (e.target === modal) closePreviewModal();
-  });
-
-  // ESC to close
-  document.addEventListener("keydown", _previewEscHandler);
-
-  document.body.appendChild(modal);
-  document.body.style.overflow = "hidden";
+  openWorkspace(projectId, title);
 }
 
 function _previewEscHandler(e) {
@@ -609,6 +562,8 @@ async function handleGenerate() {
   }
 
   currentGeneratedCode = "";
+  let _generatedProjectId = null;
+  let _generatedProjectTitle = "Generated Project";
   setGenerating(true);
 
   const panel     = document.getElementById("generate-output-panel");
@@ -667,6 +622,12 @@ async function handleGenerate() {
         try {
           const evt = JSON.parse(line.slice(6));
 
+          if (evt.project && evt.project.id) {
+            _generatedProjectId = evt.project.id;
+            _generatedProjectTitle = evt.project.title || "Generated Project";
+            loadHomeProjects();
+          }
+
           if (evt.content) {
             currentGeneratedCode += evt.content;
             pre.textContent = currentGeneratedCode;
@@ -675,10 +636,17 @@ async function handleGenerate() {
 
           if (evt.done) {
             statusDot.className = "w-2 h-2 rounded-full bg-blue-400";
-            statusLbl.textContent = "Complete";
+            statusLbl.textContent = "Complete! Opening workspace…";
             copyBtn.classList.remove("hidden");
             saved.classList.remove("hidden");
-            loadHomeProjects();
+            // Open the Active Workspace with the generated project
+            if (_generatedProjectId) {
+              setTimeout(() => {
+                openWorkspace(_generatedProjectId, _generatedProjectTitle);
+              }, 600);
+            } else {
+              loadHomeProjects();
+            }
           }
 
           if (evt.error) {
@@ -873,6 +841,237 @@ async function fetchAdminPanel() {
   } finally {
     if (btn) { btn.disabled = false; btn.style.opacity = "1"; }
   }
+}
+
+// ─── Active Workspace ─────────────────────────────────────────────────────────
+
+let _wsProjectId = null;
+let _wsCode = "";
+let _wsCodeEditTimer = null;
+let _wsIterating = false;
+let _wsPrevView = "home";
+let wsLayout = "tri";
+
+function openWorkspace(projectId, title) {
+  _wsProjectId = projectId;
+  _wsPrevView = document.querySelector(".view.active")?.id?.replace("view-", "") || "home";
+
+  // Update top bar
+  document.getElementById("ws-title").textContent = title || "Project";
+  document.getElementById("ws-ext-link").href = `/api/projects/${projectId}/preview`;
+
+  // Reset chat
+  const msgs = document.getElementById("ws-messages");
+  msgs.innerHTML = "";
+  wsAddMessage("assistant", "Project loaded. I have full context of the current code. Tell me what to change — e.g. \"Make the header blue\", \"Add a pricing section\".");
+
+  // Reset code editor
+  const editor = document.getElementById("ws-code-editor");
+  editor.value = "Loading code…";
+  document.getElementById("ws-code-stats").textContent = "Loading…";
+  document.getElementById("ws-preview-iframe").srcdoc = "<html><body style='background:#0e1117;display:flex;align-items:center;justify-content:center;height:100vh;'><p style='color:#4b5563;font-family:monospace;font-size:12px;'>Loading preview…</p></body></html>";
+
+  // Make main overflow:hidden for the workspace
+  document.querySelector("main").style.overflow = "hidden";
+
+  // Switch to workspace view
+  switchView("workspace");
+  setWsLayout("tri");
+
+  // Load project code
+  authFetch(`/api/projects/${projectId}/code`)
+    .then(r => r.json())
+    .then(d => {
+      _wsCode = d.code || "";
+      editor.value = _wsCode;
+      wsUpdateStats();
+      wsUpdatePreview();
+    })
+    .catch(() => {
+      editor.value = "// Error loading code";
+    });
+}
+
+function closeWorkspace() {
+  _wsProjectId = null;
+  document.querySelector("main").style.overflow = "";
+  switchView(_wsPrevView || "home");
+}
+
+function setWsLayout(layout) {
+  wsLayout = layout;
+  const paneChat = document.getElementById("ws-pane-chat");
+  const paneCode = document.getElementById("ws-pane-code");
+  const panePreview = document.getElementById("ws-pane-preview");
+
+  const btns = { tri: "ws-btn-tri", chat: "ws-btn-chat", code: "ws-btn-code", preview: "ws-btn-preview" };
+  Object.entries(btns).forEach(([k, id]) => {
+    const btn = document.getElementById(id);
+    if (btn) {
+      btn.style.background = k === layout ? "#2563eb" : "none";
+      btn.style.color = k === layout ? "#fff" : "#6b7280";
+    }
+  });
+
+  switch (layout) {
+    case "tri":
+      paneChat.style.display = "flex"; paneChat.style.width = "300px"; paneChat.style.flex = "";
+      paneCode.style.display = "flex"; paneCode.style.flex = "1";
+      panePreview.style.display = "flex"; panePreview.style.flex = "1";
+      break;
+    case "chat":
+      paneChat.style.display = "flex"; paneChat.style.flex = "1"; paneChat.style.width = "";
+      paneCode.style.display = "none";
+      panePreview.style.display = "none";
+      break;
+    case "code":
+      paneChat.style.display = "none";
+      paneCode.style.display = "flex"; paneCode.style.flex = "1";
+      panePreview.style.display = "none";
+      break;
+    case "preview":
+      paneChat.style.display = "none";
+      paneCode.style.display = "none";
+      panePreview.style.display = "flex"; panePreview.style.flex = "1";
+      break;
+  }
+}
+
+function wsAddMessage(role, content) {
+  const msgs = document.getElementById("ws-messages");
+  const div = document.createElement("div");
+  div.style.cssText = "display:flex;gap:8px;" + (role === "user" ? "justify-content:flex-end;" : "");
+  const isUser = role === "user";
+  div.innerHTML = `
+    ${!isUser ? `<div style="width:24px;height:24px;border-radius:50%;background:rgba(59,130,246,0.2);border:1px solid rgba(59,130,246,0.3);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;">
+      <svg width="12" height="12" fill="none" stroke="#60a5fa" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+    </div>` : ""}
+    <div style="max-width:85%;border-radius:${isUser ? "12px 12px 4px 12px" : "12px 12px 12px 4px"};padding:8px 12px;font-size:11px;line-height:1.6;${isUser ? "background:#2563eb;color:#fff;" : "background:#1c2333;border:1px solid #1f2937;color:#d1d5db;"}" id="ws-msg-${Date.now()}-${Math.random().toString(36).slice(2)}">
+      ${escapeHtml(content)}
+    </div>
+    ${isUser ? `<div style="width:24px;height:24px;border-radius:50%;background:#374151;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;">
+      <svg width="12" height="12" fill="none" stroke="#d1d5db" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+    </div>` : ""}
+  `;
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+  return div.querySelector("[id^='ws-msg-']");
+}
+
+function wsHandleKey(e) {
+  if (e.key === "Enter" && !e.shiftKey) {
+    e.preventDefault();
+    wsSendIteration();
+  }
+}
+
+async function wsSendIteration() {
+  if (!_wsProjectId || _wsIterating) return;
+  const input = document.getElementById("ws-chat-input");
+  const prompt = input.value.trim();
+  if (!prompt) return;
+
+  input.value = "";
+  _wsIterating = true;
+  document.getElementById("ws-ai-badge").style.display = "inline";
+  document.getElementById("ws-send-btn").disabled = true;
+
+  wsAddMessage("user", prompt);
+  const botBubble = wsAddMessage("assistant", "");
+  botBubble.innerHTML = `<span style="color:#6b7280;font-style:italic;">Thinking…</span>`;
+
+  let accumulated = "";
+
+  try {
+    const res = await authFetch(`/api/projects/${_wsProjectId}/iterate`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ prompt, currentCode: _wsCode }),
+    });
+
+    if (!res.ok || !res.body) throw new Error(`HTTP ${res.status}`);
+
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const events = buffer.split("\n\n");
+      buffer = events.pop() || "";
+
+      for (const event of events) {
+        if (!event.startsWith("data: ")) continue;
+        try {
+          const parsed = JSON.parse(event.slice(6));
+          if (parsed.error) throw new Error(parsed.error);
+          if (parsed.content) {
+            accumulated += parsed.content;
+            _wsCode = accumulated;
+            document.getElementById("ws-code-editor").value = _wsCode;
+            wsUpdateStats();
+            wsUpdatePreview();
+            botBubble.innerHTML = `<span style="color:#fbbf24;font-style:italic;">Applying changes…</span>`;
+          }
+          if (parsed.done) {
+            botBubble.textContent = "Done! Changes applied to the preview.";
+          }
+        } catch (e) {
+          if (e instanceof SyntaxError) continue;
+          throw e;
+        }
+      }
+    }
+  } catch (err) {
+    botBubble.innerHTML = `<span style="color:#f87171;">Error: ${escapeHtml(err.message || "Iteration failed.")}</span>`;
+  } finally {
+    _wsIterating = false;
+    document.getElementById("ws-ai-badge").style.display = "none";
+    document.getElementById("ws-send-btn").disabled = false;
+  }
+}
+
+function wsOnCodeEdit() {
+  _wsCode = document.getElementById("ws-code-editor").value;
+  wsUpdateStats();
+  if (_wsCodeEditTimer) clearTimeout(_wsCodeEditTimer);
+  _wsCodeEditTimer = setTimeout(wsUpdatePreview, 400);
+}
+
+function wsUpdatePreview() {
+  const iframe = document.getElementById("ws-preview-iframe");
+  if (iframe && _wsCode) iframe.srcdoc = _wsCode;
+}
+
+function wsUpdateStats() {
+  const lines = (_wsCode.match(/\n/g) || []).length + 1;
+  document.getElementById("ws-code-stats").textContent =
+    `${_wsCode.length.toLocaleString()} chars · ${lines} lines`;
+}
+
+function wsSyncPreview() {
+  wsUpdatePreview();
+}
+
+function wsRefreshPreview() {
+  const iframe = document.getElementById("ws-preview-iframe");
+  if (!iframe) return;
+  const html = iframe.srcdoc;
+  iframe.srcdoc = "";
+  setTimeout(() => { iframe.srcdoc = html; }, 50);
+}
+
+function wsCopyCode() {
+  if (!_wsCode) return;
+  navigator.clipboard.writeText(_wsCode).then(() => {
+    const btn = document.getElementById("ws-copy-btn");
+    const orig = btn.innerHTML;
+    btn.innerHTML = `<svg width="13" height="13" fill="none" stroke="#34d399" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>`;
+    setTimeout(() => { btn.innerHTML = orig; }, 2000);
+  });
 }
 
 // ─── Boot ─────────────────────────────────────────────────────────────────────
