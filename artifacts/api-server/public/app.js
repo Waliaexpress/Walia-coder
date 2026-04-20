@@ -58,7 +58,7 @@ function switchTab(tab) {
 
 // ─── SPA Router ───────────────────────────────────────────────────────────────
 
-const ALL_VIEWS = ["home", "projects", "published", "integrations", "settings", "admin", "api-explorer"];
+const ALL_VIEWS = ["home", "projects", "published", "integrations", "settings", "admin", "api-explorer", "workspace"];
 
 function switchView(name) {
   ALL_VIEWS.forEach((v) => {
@@ -853,8 +853,15 @@ let _wsPrevView = "home";
 let wsLayout = "tri";
 
 function openWorkspace(projectId, title) {
+  const currentActive = document.querySelector(".view.active")?.id?.replace("view-", "");
+  _wsPrevView = (currentActive && currentActive !== "workspace") ? currentActive : (_wsPrevView || "home");
+
+  if (_wsProjectId === projectId && currentActive === "workspace") {
+    document.getElementById("ws-title").textContent = title || "Project";
+    return;
+  }
+
   _wsProjectId = projectId;
-  _wsPrevView = document.querySelector(".view.active")?.id?.replace("view-", "") || "home";
 
   // Update top bar
   document.getElementById("ws-title").textContent = title || "Project";
