@@ -38,7 +38,7 @@ export function ProjectCard({ project, index, onEdit, onDelete }: ProjectCardPro
   };
 
   const openPreview = () => {
-    navigate(`/dashboard/preview/${project.id}?title=${encodeURIComponent(project.title)}`);
+    navigate(`/dashboard/workspace/${project.id}?title=${encodeURIComponent(project.title)}`);
   };
 
   return (
@@ -70,7 +70,7 @@ export function ProjectCard({ project, index, onEdit, onDelete }: ProjectCardPro
       >
         <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-500/20 border border-blue-500/30 text-blue-300 text-xs font-semibold">
           <Play className="w-3 h-3 fill-current" />
-          Launch Preview
+          Open Workspace
         </div>
       </motion.div>
 

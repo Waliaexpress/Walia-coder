@@ -7,6 +7,7 @@ import projectsRouter from "./projects.js";
 import subscriptionsRouter from "./subscriptions.js";
 import generateRouter from "./generate.js";
 import previewRouter from "./preview.js";
+import iterateRouter from "./iterate.js";
 
 const router: IRouter = Router();
 
@@ -18,5 +19,6 @@ router.use(projectsRouter);
 router.use(subscriptionsRouter);
 router.use(generateRouter);
 router.use(previewRouter);
+router.use(iterateRouter);
 
 export default router;

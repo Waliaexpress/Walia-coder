@@ -48,9 +48,9 @@ export default function Dashboard() {
   const handleGenerate = (prompt: string) => {
     generateMutation.mutate(prompt, {
       onSuccess: (result) => {
-        // Navigate to live preview — the HTML is now stored and ready
+        // Navigate to the Active Workspace — tri-pane editor/chat/preview
         navigate(
-          `/dashboard/preview/${result.projectId}?title=${encodeURIComponent(result.project.title)}`
+          `/dashboard/workspace/${result.projectId}?title=${encodeURIComponent(result.project.title)}`
         );
       },
       onError: (e) => {

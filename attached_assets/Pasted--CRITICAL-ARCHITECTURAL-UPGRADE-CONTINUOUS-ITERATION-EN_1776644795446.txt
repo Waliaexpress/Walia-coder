@@ -1,0 +1,24 @@
+**CRITICAL ARCHITECTURAL UPGRADE: CONTINUOUS ITERATION ENGINE**
+
+**Status Assessment:** We have successfully built the one-shot generation engine and the Live Preview. However, we have a fatal UX flaw: once the project is generated, the user is locked out. They cannot iterate, add features, or manually edit the code. This is unacceptable for an enterprise tool.
+
+**As Principal Architect, I am ordering an immediate UI/UX pivot from a 'Dashboard' to a 'Tri-Pane Active Workspace' when a project is running. Execute the following:**
+
+**1. The Active Workspace Layout (The Tri-Pane UI):**
+When a project is generated or clicked from the grid, hide the Dashboard and mount an `ActiveWorkspace` component. It must consume the full screen (minus the sidebar) and split into three resizable or evenly distributed columns:
+- **Pane 1 (Left - The Iteration Engine):** A continuous chat/prompt interface. It must keep the context of the current project. The user can type "Make the header blue" and the engine will apply the diff to the existing code, not start over.
+- **Pane 2 (Center - The Code Workbench):** Integrate a Code Editor component (e.g., Monaco Editor, CodeMirror, or a syntax-highlighted textarea). It must display the raw generated code (HTML/React/JS) and allow the user to type and edit it manually.
+- **Pane 3 (Right - The Live Preview):** The `iframe` we built previously. It must instantly hot-reload whenever the AI updates the code OR whenever the user types manually in Pane 2.
+
+**2. State Management for Iteration (The 'Diff' Protocol):**
+- Stop overwriting the entire project state on every prompt. 
+- Implement an 'Append/Modify' logic. When the user submits a new prompt in Pane 1, the AI must read the *existing* code in Pane 2, apply the requested changes, and update the state.
+
+**3. Manual Override Wiring:**
+- Wire the Code Editor (Pane 2) directly to the Live Preview (Pane 3). If I manually delete a line of code in Pane 2, the Live Preview must instantly reflect that deletion without needing to ask the AI.
+
+**4. The Vibe Standard:**
+- Maintain the 'Obsidian-Core' deep-dark theme across all panes. Ensure the borders between panes are sleek and subtle (`border-gray-800`). Add a 'Back to Dashboard' button at the top.
+
+**Action Required:**
+Build the `ActiveWorkspace` component with the Tri-Pane layout (Chat, Code, Preview). Wire the state so that the AI and the Human can both edit the same codebase simultaneously, with instant visual feedback in the preview.
