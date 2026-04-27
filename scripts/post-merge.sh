@@ -20,8 +20,7 @@ fi
 echo "Pushing to GitHub branch claude/ai-developer-platform-ImVIP..."
 
 set +e
-PUSH_OUTPUT=$(git -c "credential.helper=!f() { echo username=oauth2; echo password=\$EFFECTIVE_TOKEN; }; f" \
-  push https://github.com/Waliaexpress/Walia-coder.git HEAD:claude/ai-developer-platform-ImVIP 2>&1)
+PUSH_OUTPUT=$(git push "https://oauth2:${EFFECTIVE_TOKEN}@github.com/Waliaexpress/Walia-coder.git" HEAD:claude/ai-developer-platform-ImVIP 2>&1)
 PUSH_EXIT=$?
 set -e
 
