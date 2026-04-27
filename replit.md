@@ -139,3 +139,14 @@ Generated React Query hooks and fetch client from the OpenAPI spec (e.g. `useHea
 ### `scripts` (`@workspace/scripts`)
 
 Utility scripts package. Each script is a `.ts` file in `src/` with a corresponding npm script in `package.json`. Run scripts via `pnpm --filter @workspace/scripts run <script>`. Scripts can import any workspace package (e.g., `@workspace/db`) by adding it as a dependency in `scripts/package.json`.
+
+---
+
+## Environment Variables & Secrets
+
+| Variable | Required | Description |
+|---|---|---|
+| `GITHUB_PAT` | Yes (for GitHub sync) | Personal Access Token with `repo` scope. Used by `scripts/push-to-github.sh` to authenticate pushes. |
+| `GITHUB_REPO` | No | Target GitHub repository in `owner/repo` format. Defaults to `Waliaexpress/Walia-coder`. Override to push to a fork or different repo. |
+| `GITHUB_BRANCH` | No | Target branch for GitHub sync. Overrides the hard-coded default but is itself overridden by the positional argument passed to the script. |
+| `DATABASE_URL` | Yes | PostgreSQL connection string. Provided automatically by Replit. |

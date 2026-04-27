@@ -1,8 +1,14 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-REPO_HOST="github.com/Waliaexpress/Walia-coder.git"
-TARGET_BRANCH="${1:-claude/ai-developer-platform-ImVIP}"
+# Target repository: set GITHUB_REPO to override (e.g. "myorg/my-fork").
+# Defaults to the primary Walia-coder repo.
+GITHUB_REPO="${GITHUB_REPO:-Waliaexpress/Walia-coder}"
+REPO_HOST="github.com/${GITHUB_REPO}.git"
+
+# Target branch: the positional argument takes precedence, then GITHUB_BRANCH,
+# then the hard-coded fallback.
+TARGET_BRANCH="${1:-${GITHUB_BRANCH:-claude/ai-developer-platform-ImVIP}}"
 
 if [ -z "${GITHUB_PAT:-}" ]; then
   echo "Error: GITHUB_PAT environment variable is not set." >&2
