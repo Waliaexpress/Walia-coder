@@ -6,6 +6,7 @@ import { CommandPrompt } from "@/components/workspace/CommandPrompt";
 import { ProjectCard } from "@/components/workspace/ProjectCard";
 import { DeleteModal } from "@/components/workspace/DeleteModal";
 import { EditModal } from "@/components/workspace/EditModal";
+import { GitHubSyncBadge } from "@/components/workspace/GitHubSyncBadge";
 import { useAuth } from "@/lib/auth";
 import { useGetProjectsSummary, useListProjects } from "@workspace/api-client-react";
 import {
@@ -132,6 +133,13 @@ export default function Dashboard() {
               </motion.div>
             );
           })}
+        </div>
+      </section>
+
+      {/* GitHub Sync Status */}
+      <section className="mb-10">
+        <div className="max-w-xs">
+          <GitHubSyncBadge />
         </div>
       </section>
 

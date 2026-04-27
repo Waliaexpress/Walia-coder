@@ -8,6 +8,7 @@ import subscriptionsRouter from "./subscriptions.js";
 import generateRouter from "./generate.js";
 import previewRouter from "./preview.js";
 import iterateRouter from "./iterate.js";
+import githubSyncStatusRouter from "./github-sync-status.js";
 
 const router: IRouter = Router();
 
@@ -20,5 +21,6 @@ router.use(subscriptionsRouter);
 router.use(generateRouter);
 router.use(previewRouter);
 router.use(iterateRouter);
+router.use(githubSyncStatusRouter);
 
 export default router;
