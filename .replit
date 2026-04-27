@@ -38,3 +38,8 @@ externalPort = 3000
 
 [nix]
 channel = "stable-25_05"
+
+[userenv]
+
+[userenv.shared]
+Github_token1 = "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"
